@@ -488,43 +488,73 @@ async function runGlobalAgent() {
 async function runArxivAgent() {
   try {
     const label = document.getElementById('arxiv-agent-status');
-    if(label) label.innerText = "Querying API infrastructure...";
+    if (label) label.innerText = "Querying API infrastructure...";
     const dot = document.getElementById('arxiv-dot');
-    if(dot) dot.className = "agent-dot running";
+    if (dot) dot.className = "agent-dot running";
 
-    // Proxy-free fallback query to fetch real public atom stream parsed via regex structural maps
-    const res = await fetch('https://export.arxiv.org/api/query?search_query=cat:quant-ph&max_results=5&sortOrder=descending');
+    // FIX 1: Added &sortBy=submittedDate so "descending" actually returns the newest papers
+    const res = await fetch('https://export.arxiv.org/api/query?search_query=cat:quant-ph&max_results=5&sortBy=submittedDate&sortOrder=descending');
     const text = await res.text();
     
     const parser = new DOMParser();
+    // Using text/xml parsing
     const xml = parser.parseFromString(text, "text/xml");
-    const entries = xml.getElementsByTagName("entry");
+    
+    // FIX 2: Use querySelectorAll to bypass potential strict XML namespace issues with getElementsByTagName
+    const entries = xml.querySelectorAll("entry");
     
     let processed = [];
-    for(let entry of entries) {
-      let id = entry.getElementsByTagName("id")[0]?.textContent?.split('/abs/')?.[1] || '';
-      let title = entry.getElementsByTagName("title")[0]?.textContent || '';
-      let summary = entry.getElementsByTagName("summary")[0]?.textContent || '';
-      let authorNodes = entry.getElementsByTagName("author");
-      let primaryAuthor = authorNodes[0]?.getElementsByTagName("name")?.[0]?.textContent || 'Unknown';
+    for (let entry of entries) {
+      // FIX 3: Safe querying using scoped querySelector lookups
+      let idNode = entry.querySelector("id");
+      let id = idNode?.textContent?.split('/abs/')?.[1] || '';
       
+      let title = entry.querySelector("title")?.textContent || '';
+      let summary = entry.querySelector("summary")?.textContent || '';
+      
+      // Query all author tags inside this specific entry
+      let authorNodes = entry.querySelectorAll("author");
+      let primaryAuthor = 'Unknown';
+      if (authorNodes.length > 0) {
+        primaryAuthor = authorNodes[0].querySelector("name")?.textContent || 'Unknown';
+      }
+      
+      // Topic classification logic
       let topic = 'algo';
-      if(summary.toLowerCase().includes('machine') || title.toLowerCase().includes('learning')) topic = 'qml';
-      else if(summary.toLowerCase().includes('error') || summary.toLowerCase().includes('surface')) topic = 'error';
-      else if(summary.toLowerCase().includes('crypt') || summary.toLowerCase().includes('key')) topic = 'crypto';
+      const cleanSummary = summary.toLowerCase();
+      const cleanTitle = title.toLowerCase();
+      
+      if (cleanSummary.includes('machine') || cleanTitle.includes('learning')) {
+        topic = 'qml';
+      } else if (cleanSummary.includes('error') || cleanSummary.includes('surface')) {
+        topic = 'error';
+      } else if (cleanSummary.includes('crypt') || cleanSummary.includes('key')) {
+        topic = 'crypto';
+      }
 
-      processed.push({ id, title: title.trim(), abstract: summary.trim(), author: primaryAuthor, topic });
+      processed.push({ 
+        id, 
+        title: title.trim().replace(/\s+/g, ' '), // Cleans up accidental XML line breaks in titles
+        abstract: summary.trim(), 
+        author: primaryAuthor.trim(), 
+        topic 
+      });
     }
 
+    // Update state and render
     store.arxiv = processed;
     renderArxiv(processed);
-    document.getElementById('stat-papers').innerText = processed.length;
-    if(dot) dot.className = "agent-dot done";
-    if(label) label.innerText = "Assembled dynamic listings.";
-  } catch(e) {
-    console.error(e);
-    if(document.getElementById('arxiv-dot')) document.getElementById('arxiv-dot').className = "agent-dot error";
-    if(document.getElementById('arxiv-agent-status')) document.getElementById('arxiv-agent-status').innerText = "Parsing constraint fault.";
+    
+    // Update DOM UI elements
+    const statPapers = document.getElementById('stat-papers');
+    if (statPapers) statPapers.innerText = processed.length;
+    
+    if (dot) dot.className = "agent-dot done";
+    if (label) label.innerText = "Assembled dynamic listings.";
+  } catch (e) {
+    console.error("Arxiv Agent Error: ", e);
+    if (document.getElementById('arxiv-dot')) document.getElementById('arxiv-dot').className = "agent-dot error";
+    if (document.getElementById('arxiv-agent-status')) document.getElementById('arxiv-agent-status').innerText = "Parsing constraint fault.";
   }
 }
 
