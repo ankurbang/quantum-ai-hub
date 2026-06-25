@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { systemPrompt, userPrompt } = req.body;
+  const { systemPrompt, userPrompt, useWebSearch } = req.body;
 
   // Validate required fields
   if (!systemPrompt || !userPrompt) {
@@ -28,9 +28,14 @@ export default async function handler(req, res) {
       }
     };
 
-    // Calling the Gemini 1.5 Pro or Flash engine
+    // Dynamically inject Google Search grounding if requested by the frontend agent
+    if (useWebSearch) {
+      body.tools = [{ googleSearch: {} }];
+    }
+
+    // Updated endpoint to use the newer gemini-2.5-flash engine
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
