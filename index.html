@@ -373,8 +373,8 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 </footer>
 
 <script>
-// REPLACE THIS CONTEXT VARIABLE WITH YOUR NEW OBTAINED GEMINI API KEY
-const GEMINI_KEY = 'AQ.Ab8RN6LBqIlKkiSKdBKcojW6RhQNZrM62fefOReE4J63_Y5suw';
+// REPLACE THIS VARIABLE VALUE WITH YOUR REAL OBTAINED GEMINI API KEY (e.g., 'AIzaSy...')
+const GEMINI_KEY = '';
 
 // Universal engine wrapper executing Gemini structural queries safely across modern configurations
 async function callGemini(systemPrompt, userPrompt, useWebSearch = false) {
@@ -494,14 +494,13 @@ async function runArxivAgent() {
     // arXiv API URL
     const arxivUrl = 'https://export.arxiv.org/api/query?search_query=cat:quant-ph&max_results=5&sortBy=submittedDate&sortOrder=descending';
 
-    // Optional: quick CORS-proxy for testing (replace with your server endpoint for production)
-    const useProxy = false; // set to true for quick local testing
+    // Flipped to true to fix direct client side CORS blocks natively
+    const useProxy = true; 
     const url = useProxy
       ? 'https://api.allorigins.win/raw?url=' + encodeURIComponent(arxivUrl)
       : arxivUrl;
 
     const res = await fetch(url);
-    // IMPORTANT: if the browser blocks due to CORS, you'll see the error in console/network (the fetch may never resolve)
     if (!res.ok) {
       const txt = await res.text().catch(()=>'');
       throw new Error(`arXiv fetch failed: ${res.status} ${res.statusText} ${txt.slice(0,200)}`);
@@ -510,9 +509,7 @@ async function runArxivAgent() {
     const contentType = res.headers.get('content-type') || '';
     const text = await res.text();
 
-    // Basic sanity logging to console for debugging
     console.debug('arXiv response content-type:', contentType);
-    // If response is not XML, dump a little for debugging
     if (!/xml|html|atom/i.test(contentType)) {
       console.warn('arXiv returned unexpected content-type:', contentType);
     }
@@ -520,13 +517,11 @@ async function runArxivAgent() {
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, "text/xml");
 
-    // Fallbacks for parser errors: check for parsererror nodes
     if (xml.querySelector && xml.querySelector('parsererror')) {
       console.error('XML parse error:', xml.querySelector('parsererror').textContent);
       throw new Error('Failed to parse arXiv XML feed.');
     }
 
-    // Try both namespace-insensitive lookups
     let entries = xml.querySelectorAll("entry");
     if (!entries || entries.length === 0) {
       entries = xml.getElementsByTagName('entry') || [];
@@ -534,7 +529,6 @@ async function runArxivAgent() {
 
     const processed = [];
     for (let entry of entries) {
-      // Use fallback getElementsByTagName if querySelector fails on namespaces
       const idNode = entry.querySelector?.("id") || entry.getElementsByTagName('id')[0];
       const id = idNode?.textContent?.split('/abs/')?.[1] || '';
 
@@ -603,7 +597,7 @@ async function runUpdatesAgent() {
   } catch(e) {
     console.error(e);
     if(document.getElementById('updates-dot')) document.getElementById('updates-dot').className = "agent-dot error";
-    document.getElementById('updates-agent-status').innerText = "Intelligence collection bypassed.";
+    document.getElementById('updates-agent-status').innerText = `Fault encountered: ${e.message}`;
   }
 }
 
@@ -664,7 +658,6 @@ async function askGeminiHub() {
     const sys = "You are the primary technical advisor at the Quantum AI Research Hub. Use precise terminology and context clues to generate explicit, comprehensive technical assessments with Markdown structural formatting.";
     const response = await callGemini(sys, query, true);
     
-    // Simplistic Markdown paragraph formatter simulation
     target.innerHTML = response
       .replace(/\n\n/g, '<br><br>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
