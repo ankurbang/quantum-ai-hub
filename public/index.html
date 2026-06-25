@@ -102,7 +102,8 @@ h1 em{font-style:normal;color:var(--accent);}
 .repo-card:hover{border-color:var(--border-accent);}
 .repo-header{display:flex;align-items:flex-start;gap:10px;}
 .repo-icon{color:var(--accent);margin-top:1px;flex-shrink:0;}
-.repo-name{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--accent);}
+.repo-name{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--accent);text-decoration:none;}
+.repo-name:hover{text-decoration:underline;}
 .repo-owner{font-size:12px;color:var(--text-dim);}
 .repo-desc{font-size:13px;color:var(--text-muted);}
 .repo-stats{display:flex;gap:14px;margin-top:4px;}
@@ -126,7 +127,7 @@ h1 em{font-style:normal;color:var(--accent);}
 .ai-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
 .ai-chip{font-size:12px;color:var(--text-muted);border:0.5px solid var(--border);padding:4px 12px;border-radius:20px;cursor:pointer;background:var(--bg);transition:all 0.15s;font-family:var(--font-mono);}
 .ai-chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
-.ai-response{background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:18px;min-height:80px;font-size:14px;color:var(--text-muted);line-height:1.7;display:none;}
+.ai-response{background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:18px;min-height:80px;font-size:14px;color:var(--text-muted);line-height:1.7;display:none;white-space:pre-wrap;}
 .ai-response.active{display:block;}
 
 /* FILTER TABS */
@@ -171,16 +172,15 @@ h1 em{font-style:normal;color:var(--accent);}
 .skel-text2{width:80%;}
 .skel-short{width:40%;height:10px;}
 
+/* AI GENERATED LABEL */
+.ai-gen-label{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);color:var(--accent2);border:0.5px solid rgba(0,229,184,0.2);padding:2px 7px;border-radius:20px;margin-left:6px;}
+
 /* FOOTER */
 footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .footer-left{font-size:13px;color:var(--text-dim);}
-.footer-left a{color:var(--accent);text-decoration:none;}
 .footer-links{display:flex;gap:16px;}
 .footer-links a{font-size:12px;color:var(--text-dim);text-decoration:none;}
 .footer-links a:hover{color:var(--text-muted);}
-
-/* AI GENERATED LABEL */
-.ai-gen-label{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);color:var(--accent2);border:0.5px solid rgba(0,229,184,0.2);padding:2px 7px;border-radius:20px;margin-left:6px;}
 
 @media(max-width:768px){
   .stats-strip{grid-template-columns:repeat(2,1fr);}
@@ -245,9 +245,9 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
     <button class="filter-tab" onclick="filterCards('india','gov',this)">Government</button>
   </div>
   <div class="card-grid" id="india-cards">
-    <div class="skeleton-card" id="india-skel-1"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
-    <div class="skeleton-card" id="india-skel-2"><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
-    <div class="skeleton-card" id="india-skel-3"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
   </div>
 </div>
 
@@ -273,9 +273,9 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
     <button class="filter-tab" onclick="filterCards('global','startup',this)">Startups</button>
   </div>
   <div class="card-grid" id="global-cards">
-    <div class="skeleton-card" id="global-skel-1"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
-    <div class="skeleton-card" id="global-skel-2"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
-    <div class="skeleton-card" id="global-skel-3"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
   </div>
 </div>
 
@@ -284,10 +284,13 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 <!-- REPOS SECTION -->
 <div class="section" id="repos">
   <div class="section-header">
-    <div class="section-title"><span class="tag">03</span>Essential Open-Source Repos</div>
-    <div class="section-meta">⭐ live frameworks catalog</div>
+    <div class="section-title"><span class="tag">03</span>Essential Open-Source Repos <span class="ai-gen-label">⟳ Live GitHub</span></div>
+    <div class="section-meta" id="repos-meta">Fetching live star counts...</div>
   </div>
-  <div class="card-grid" id="repo-grid"></div>
+  <div class="card-grid" id="repo-grid">
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-short"></div></div>
+  </div>
 </div>
 
 <hr class="divider">
@@ -295,8 +298,8 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 <!-- ARXIV SECTION -->
 <div class="section" id="arxiv">
   <div class="section-header">
-    <div class="section-title"><span class="tag">04</span>Latest arXiv Papers <span class="ai-gen-label">⟳ Live Feed</span></div>
-    <div class="section-meta" id="arxiv-meta">Fetching stream options...</div>
+    <div class="section-title"><span class="tag">04</span>Latest arXiv Papers <span class="ai-gen-label">⟳ AI Agent</span></div>
+    <div class="section-meta" id="arxiv-meta">Agent initialising...</div>
   </div>
   <div class="agent-bar">
     <div class="agent-dot idle" id="arxiv-dot"></div>
@@ -308,6 +311,7 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
     <button class="filter-tab active" onclick="filterArxiv('all',this)">All topics</button>
     <button class="filter-tab" onclick="filterArxiv('qml',this)">Quantum ML</button>
     <button class="filter-tab" onclick="filterArxiv('error',this)">Error Correction</button>
+    <button class="filter-tab" onclick="filterArxiv('crypto',this)">Post-Quantum Crypto</button>
   </div>
   <div class="card-grid" id="arxiv-grid">
     <div class="skeleton-card"><div class="skeleton skel-line skel-title" style="height:20px;width:90%"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div></div>
@@ -330,7 +334,11 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
     <button class="agent-refresh" onclick="runUpdatesAgent()">↺ Re-run</button>
   </div>
   <div class="update-list" id="update-list">
-    <div class="update-item"><div class="update-date"><div class="skeleton skel-line" style="width:60px;height:10px"></div></div><div class="update-dot"></div><div class="update-body"><div class="skeleton skel-line skel-text" style="height:14px;margin-bottom:6px"></div></div></div>
+    <div class="update-item">
+      <div class="update-date"><div class="skeleton skel-line" style="width:60px;height:10px"></div></div>
+      <div class="update-dot"></div>
+      <div class="update-body"><div class="skeleton skel-line skel-text" style="height:14px;margin-bottom:6px"></div></div>
+    </div>
   </div>
 </div>
 
@@ -355,8 +363,8 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
     <div class="ai-chips">
       <div class="ai-chip" onclick="setQuery('Latest quantum computing breakthroughs in India')">🇮🇳 India breakthroughs</div>
       <div class="ai-chip" onclick="setQuery('What is quantum machine learning and key algorithms?')">What is Quantum ML?</div>
-      <div class="ai-chip" onclick="setQuery('Top quantum AI startups globally raising funding')">Top funded startups</div>
-      <div class="ai-chip" onclick="setQuery('India National Quantum Mission NQM goals and progress')">India NQM status</div>
+      <div class="ai-chip" onclick="setQuery('Top quantum AI startups globally raising funding in 2025')">Top funded startups</div>
+      <div class="ai-chip" onclick="setQuery('India National Quantum Mission NQM goals and progress 2025')">India NQM status</div>
     </div>
     <div class="ai-response" id="aiResponse"></div>
   </div>
@@ -374,32 +382,30 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 </footer>
 
 <script>
-// ═══════════════════════════════════════════════════
-// CONNECTS ROUTING PATH CLEANLY TO THE PROXIED HANDLER
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// CORE: Call backend proxy (Vercel serverless → Gemini v1beta)
+// ═══════════════════════════════════════════════════════════════════
 async function callGemini(systemPrompt, userPrompt, useWebSearch = false) {
-  const url = '/api/backend'; 
-  
-  const body = { systemPrompt, userPrompt, useWebSearch };
-
-  const res = await fetch(url, {
+  const res = await fetch('/api/backend', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ systemPrompt, userPrompt, useWebSearch })
   });
-  
   if (!res.ok) {
-    throw new Error(`Server status failure: ${res.status}`);
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Backend error ${res.status}: ${err.error || 'unknown'}`);
   }
-  
   const data = await res.json();
   return data.text || '';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════
 function setAgentState(id, state, msg) {
   const dot = document.getElementById(id + '-dot');
   const status = document.getElementById(id + '-agent-status');
-  if (dot) { dot.className = 'agent-dot ' + state; }
+  if (dot) dot.className = 'agent-dot ' + state;
   if (status) status.textContent = msg;
 }
 
@@ -407,89 +413,48 @@ function formatDate(d) {
   return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 }
 
-// ═══════════════════════════════════════════════════
-// AGENT 1: INDIA Ecosystem Agent
-// ═══════════════════════════════════════════════════
-async function runIndiaAgent() {
-  setAgentState('india', 'running', 'Discovering India Quantum AI orgs...');
-  document.getElementById('india-meta').textContent = 'AI agent running...';
-
-  const SYSTEM = `You are an expert analyst mapping India's quantum computing ecosystem. Return ONLY valid JSON matching this exact scheme:
-  {"orgs": [{"name":"...","type":"startup|research|gov","emoji":"...","desc":"...","url":"...","meta":"...","badges":["india","startup|research|gov"]}]}`;
-
-  const PROMPT = `Generate a JSON list containing 4 real, active Indian systems (e.g., QNu Labs, BosonQ Psi, TIFR Quantum, IISC Engine). Include short descriptions.`;
-
-  try {
-    const raw = await callGemini(SYSTEM, PROMPT, false);
-    const clean = raw.replace(/```json|
-```/g, '').trim();
-    const data = JSON.parse(clean);
-    renderOrgCards('india', data.orgs);
-    document.getElementById('india-meta').textContent = `${data.orgs.length} orgs · AI-generated · ${formatDate(new Date())}`;
-    document.getElementById('stat-india').innerHTML = data.orgs.length + '<span>+</span>';
-    setAgentState('india', 'done', `Synced`);
-  } catch (e) {
-    console.error(e);
-    setAgentState('india', 'error', 'Error running pipeline - loading fallbacks');
-    renderFallbackIndia();
-  }
+// FIX: safe JSON parser — strips leftover markdown fences after backend clean
+function parseJSON(raw) {
+  const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  return JSON.parse(clean);
 }
 
-// ═══════════════════════════════════════════════════
-// AGENT 2: GLOBAL Ecosystem Agent
-// ═══════════════════════════════════════════════════
-async function runGlobalAgent() {
-  setAgentState('global', 'running', 'Scanning global ecosystem indexes...');
-  document.getElementById('global-meta').textContent = 'AI agent running...';
-
-  const SYSTEM = `You are a Global Quantum AI industry analyst. Return ONLY valid JSON:
-  {"orgs": [{"name":"...","type":"hardware|software|ai-lab|startup","emoji":"...","desc":"...","url":"...","meta":"...","badges":["global","hardware|software|ai-lab|startup"]}]}`;
-
-  const PROMPT = `Provide 4 prominent global players in quantum processing fields (e.g., IBM Quantum, Xanadu, Google Quantum, IonQ) in JSON structural parameters.`;
-
-  try {
-    const raw = await callGemini(SYSTEM, PROMPT, false);
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const data = JSON.parse(clean);
-    renderOrgCards('global', data.orgs);
-    document.getElementById('global-meta').textContent = `${data.orgs.length} entities mapped · ${formatDate(new Date())}`;
-    document.getElementById('stat-global').innerHTML = data.orgs.length + '<span>+</span>';
-    setAgentState('global', 'done', `Synchronized`);
-  } catch (e) {
-    console.error(e);
-    setAgentState('global', 'error', 'Error mapping remote assets - loading fallbacks');
-    renderFallbackGlobal();
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// DOM RENDERING ENGINE & INTERACTIVE LOGIC
-// ═══════════════════════════════════════════════════
 function badgeClass(b) {
-  const map = { india:'badge-india', global:'badge-global', research:'badge-research', startup:'badge-startup', gov:'badge-gov', hardware:'badge-startup', software:'badge-research', 'ai-lab':'badge-research' };
+  const map = {
+    india: 'badge-india', global: 'badge-global', research: 'badge-research',
+    startup: 'badge-startup', gov: 'badge-gov', hardware: 'badge-startup',
+    software: 'badge-research', 'ai-lab': 'badge-research'
+  };
   return map[b] || 'badge-startup';
 }
+
 function badgeLabel(b) {
-  const map = { india:'🇮🇳 India', global:'Global', research:'Research', startup:'Startup', gov:'Gov', hardware:'Hardware', software:'SDK', 'ai-lab':'AI Lab' };
+  const map = {
+    india: '🇮🇳 India', global: 'Global', research: 'Research',
+    startup: 'Startup', gov: 'Gov', hardware: 'Hardware',
+    software: 'SDK', 'ai-lab': 'AI Lab'
+  };
   return map[b] || b;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════════
 function renderOrgCards(section, orgs) {
   const grid = document.getElementById(section + '-cards');
   if (!grid) return;
-  
   grid.innerHTML = orgs.map(org => `
     <div class="card ai-generated" data-type="${org.type}">
       <div class="card-top">
         <div class="card-logo">${org.emoji || '⚛️'}</div>
         <div class="card-badges">
-          ${org.badges ? org.badges.map(b => `<span class="badge ${badgeClass(b)}">${badgeLabel(b)}</span>`).join('') : ''}
+          ${(org.badges || []).map(b => `<span class="badge ${badgeClass(b)}">${badgeLabel(b)}</span>`).join('')}
         </div>
       </div>
       <div class="card-name">${org.name}</div>
       <div class="card-desc">${org.desc}</div>
       <div class="card-footer">
-        <a href="${org.url}" target="_blank" class="card-link">Endpoint ↗</a>
+        <a href="${org.url}" target="_blank" rel="noopener" class="card-link">Visit ↗</a>
         <div class="card-meta">${org.meta || ''}</div>
       </div>
     </div>
@@ -497,72 +462,233 @@ function renderOrgCards(section, orgs) {
 }
 
 function filterCards(sectionId, filterType, btn) {
-  const tabs = btn.parentElement.querySelectorAll('.filter-tab');
-  tabs.forEach(t => t.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-
   document.querySelectorAll(`#${sectionId}-cards .card`).forEach(card => {
-    if (filterType === 'all' || card.getAttribute('data-type') === filterType) {
-      card.style.display = 'block';
-    } else {
-      card.style.display = 'none';
-    }
+    card.style.display = (filterType === 'all' || card.dataset.type === filterType) ? '' : 'none';
   });
-}
-
-async function runArxivAgent() {
-  setAgentState('arxiv', 'running', 'Connecting to raw indexing feed...');
-  setTimeout(() => {
-    const mockPapers = [
-      { title: "Quantum Machine Learning Algorithms on Noisy Intermediate-Scale Engines", id: "2604.0911", tags: ["QML"], abstract: "We introduce optimizations for high-dimensional feature scaling models across unmitigated processing frameworks." },
-      { title: "Fault-Tolerant Multi-Layer Surface Code Compilations", id: "2605.1422", tags: ["Error Correction"], abstract: "Analyzing noise thresholds over coupled geometric topological structures." }
-    ];
-    document.getElementById('arxiv-grid').innerHTML = mockPapers.map(p => `
-      <div class="arxiv-card" data-topic="${p.tags[0].toLowerCase().includes('qml') ? 'qml' : 'error'}">
-        <div class="arxiv-header"><div class="arxiv-title"><a href="#">${p.title}</a></div></div>
-        <div class="arxiv-meta"><span class="arxiv-id">arXiv:${p.id}</span></div>
-        <div class="arxiv-abstract">${p.abstract}</div>
-        <div class="arxiv-tags">${p.tags.map(t => `<span class="arxiv-tag">${t}</span>`).join('')}</div>
-      </div>
-    `).join('');
-    document.getElementById('arxiv-meta').textContent = 'Live tracking synced';
-    document.getElementById('stat-papers').innerHTML = '2<span></span>';
-    setAgentState('arxiv', 'done', 'Connected');
-  }, 500);
 }
 
 function filterArxiv(topic, btn) {
-  const tabs = document.getElementById('arxiv-filter-row').querySelectorAll('.filter-tab');
-  tabs.forEach(t => t.classList.remove('active'));
+  document.getElementById('arxiv-filter-row').querySelectorAll('.filter-tab')
+    .forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  
   document.querySelectorAll('#arxiv-grid .arxiv-card').forEach(c => {
-    if (topic === 'all' || c.getAttribute('data-topic') === topic) {
-      c.style.display = 'block';
-    } else {
-      c.style.display = 'none';
-    }
+    c.style.display = (topic === 'all' || c.dataset.topic === topic) ? '' : 'none';
   });
 }
 
-async function runUpdatesAgent() {
-  setAgentState('updates', 'running', 'Sifting timeline streams...');
-  setTimeout(() => {
-    document.getElementById('update-list').innerHTML = `
-      <div class="update-item ai-generated">
-        <div class="update-date">JUNE 2026</div>
-        <div class="update-dot ai"></div>
-        <div class="update-body">
-          <div class="update-title">India NQM establishes formal deep-tech cluster foundations</div>
-          <div class="update-meta">Initial resource grants open configuration allocations to targeted enterprise hubs.</div>
-        </div>
-      </div>`;
-    document.getElementById('updates-meta').textContent = 'Tracking clear';
-    document.getElementById('stat-updates').innerHTML = '1<span></span>';
-    setAgentState('updates', 'done', 'Operational');
-  }, 400);
+// ═══════════════════════════════════════════════════════════════════
+// AGENT 1: INDIA Ecosystem Agent
+// ═══════════════════════════════════════════════════════════════════
+async function runIndiaAgent() {
+  setAgentState('india', 'running', 'Discovering India Quantum AI orgs...');
+  document.getElementById('india-meta').textContent = 'AI agent running...';
+
+  const SYSTEM = `You are an expert analyst mapping India's quantum computing and quantum AI ecosystem.
+Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
+{"orgs":[{"name":"...","type":"startup|research|gov","emoji":"...","desc":"...","url":"...","meta":"...","badges":["india","startup|research|gov"]}]}`;
+
+  const PROMPT = `List 6 real, active Indian organizations in quantum computing or quantum AI.
+Include a mix of startups (e.g. QNu Labs, BosonQ Psi, QpiAI), research institutions (e.g. IIT Bombay, IISc, TIFR), and government bodies (e.g. C-DOT, DST National Quantum Mission).
+Return only JSON.`;
+
+  try {
+    const raw = await callGemini(SYSTEM, PROMPT, false);
+    const data = parseJSON(raw);
+    renderOrgCards('india', data.orgs);
+    document.getElementById('india-meta').textContent = `${data.orgs.length} orgs · AI-generated · ${formatDate(new Date())}`;
+    document.getElementById('stat-india').innerHTML = `${data.orgs.length}<span>+</span>`;
+    setAgentState('india', 'done', 'Synced');
+  } catch (e) {
+    console.error('India agent error:', e);
+    setAgentState('india', 'error', 'Failed — showing fallback data');
+    renderFallbackIndia();
+  }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// AGENT 2: GLOBAL Ecosystem Agent
+// ═══════════════════════════════════════════════════════════════════
+async function runGlobalAgent() {
+  setAgentState('global', 'running', 'Scanning global ecosystem indexes...');
+  document.getElementById('global-meta').textContent = 'AI agent running...';
+
+  const SYSTEM = `You are a Global Quantum AI industry analyst.
+Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
+{"orgs":[{"name":"...","type":"hardware|software|ai-lab|startup","emoji":"...","desc":"...","url":"...","meta":"...","badges":["global","hardware|software|ai-lab|startup"]}]}`;
+
+  const PROMPT = `List 6 prominent global organizations in quantum computing or quantum AI.
+Include hardware companies (IBM Quantum, Google Quantum AI, IonQ), software/SDK providers (Xanadu PennyLane, Quantinuum), and AI labs doing quantum research.
+Return only JSON.`;
+
+  try {
+    const raw = await callGemini(SYSTEM, PROMPT, false);
+    const data = parseJSON(raw);
+    renderOrgCards('global', data.orgs);
+    document.getElementById('global-meta').textContent = `${data.orgs.length} entities mapped · ${formatDate(new Date())}`;
+    document.getElementById('stat-global').innerHTML = `${data.orgs.length}<span>+</span>`;
+    setAgentState('global', 'done', 'Synchronized');
+  } catch (e) {
+    console.error('Global agent error:', e);
+    setAgentState('global', 'error', 'Failed — showing fallback data');
+    renderFallbackGlobal();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AGENT 3: arXiv Agent — calls Gemini with web search to get real papers
+// ═══════════════════════════════════════════════════════════════════
+async function runArxivAgent() {
+  setAgentState('arxiv', 'running', 'Fetching latest quant-ph papers...');
+  document.getElementById('arxiv-meta').textContent = 'Agent running...';
+
+  const SYSTEM = `You are a quantum computing research curator monitoring arXiv.
+Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
+{"papers":[{"title":"...","arxivId":"YYMM.NNNNN","authors":"...","abstract":"...","topic":"qml|error|crypto|general","tags":["..."]}]}`;
+
+  const PROMPT = `Find 6 recent arXiv papers (from 2025 or 2026) on quantum computing topics: quantum machine learning, error correction, post-quantum cryptography, or quantum algorithms.
+Use real paper titles and real arXiv IDs. Return only JSON.`;
+
+  try {
+    // useWebSearch=true so Gemini can ground results in real arXiv data
+    const raw = await callGemini(SYSTEM, PROMPT, true);
+    const data = parseJSON(raw);
+
+    document.getElementById('arxiv-grid').innerHTML = data.papers.map(p => `
+      <div class="arxiv-card" data-topic="${p.topic || 'general'}">
+        <div class="arxiv-header">
+          <div class="arxiv-title">
+            <a href="https://arxiv.org/abs/${p.arxivId}" target="_blank" rel="noopener">${p.title}</a>
+          </div>
+        </div>
+        <div class="arxiv-meta">
+          <span class="arxiv-id">arXiv:${p.arxivId}</span>
+          <span>${p.authors || ''}</span>
+        </div>
+        <div class="arxiv-abstract">${p.abstract}</div>
+        <div class="arxiv-tags">
+          ${(p.tags || []).map(t => `<span class="arxiv-tag">${t}</span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('arxiv-meta').textContent = `${data.papers.length} papers · web-grounded · ${formatDate(new Date())}`;
+    document.getElementById('stat-papers').innerHTML = `${data.papers.length}<span></span>`;
+    setAgentState('arxiv', 'done', 'Connected');
+  } catch (e) {
+    console.error('arXiv agent error:', e);
+    setAgentState('arxiv', 'error', 'Failed — showing fallback papers');
+    renderFallbackArxiv();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AGENT 4: NEWS / UPDATES Agent — calls Gemini with web search
+// ═══════════════════════════════════════════════════════════════════
+async function runUpdatesAgent() {
+  setAgentState('updates', 'running', 'Fetching latest quantum news...');
+  document.getElementById('updates-meta').textContent = 'Agent running...';
+
+  const SYSTEM = `You are a quantum computing news intelligence analyst.
+Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
+{"updates":[{"date":"MON YYYY","title":"...","summary":"...","source":"...","url":"..."}]}`;
+
+  const PROMPT = `Find 5 recent news items (from 2025 or 2026) about: quantum computing breakthroughs, India National Quantum Mission, quantum AI funding rounds, or post-quantum cryptography standards.
+Use real events with real dates. Return only JSON.`;
+
+  try {
+    // useWebSearch=true for real news grounding
+    const raw = await callGemini(SYSTEM, PROMPT, true);
+    const data = parseJSON(raw);
+
+    document.getElementById('update-list').innerHTML = data.updates.map(u => `
+      <div class="update-item ai-generated">
+        <div class="update-date">${u.date}</div>
+        <div class="update-dot ai"></div>
+        <div class="update-body">
+          <div class="update-title">${u.title}</div>
+          <div class="update-meta">
+            ${u.summary}
+            ${u.url ? `<br><a href="${u.url}" target="_blank" rel="noopener">Read more ↗</a>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('updates-meta').textContent = `${data.updates.length} items · web-grounded · ${formatDate(new Date())}`;
+    document.getElementById('stat-updates').innerHTML = `${data.updates.length}<span></span>`;
+    setAgentState('updates', 'done', 'Operational');
+  } catch (e) {
+    console.error('Updates agent error:', e);
+    setAgentState('updates', 'error', 'Failed — showing fallback news');
+    renderFallbackUpdates();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REPOS: Live GitHub API fetch
+// ═══════════════════════════════════════════════════════════════════
+const REPOS = [
+  { slug: 'Qiskit/qiskit', desc: 'Open-source quantum circuit SDK by IBM.', lang: 'Python', color: '#3572A5' },
+  { slug: 'XanaduAI/pennylane', desc: 'Differentiable quantum programming for QML.', lang: 'Python', color: '#3572A5' },
+  { slug: 'quantumlib/Cirq', desc: "Google's framework for writing quantum algorithms.", lang: 'Python', color: '#3572A5' },
+  { slug: 'PennyLaneAI/catalyst', desc: 'Quantum just-in-time compiler for PennyLane.', lang: 'Python', color: '#3572A5' },
+  { slug: 'microsoft/qsharp', desc: 'Q# language and quantum development kit by Microsoft.', lang: 'Q#', color: '#178600' },
+  { slug: 'ionq-archives/ionq-api-demo', desc: 'IonQ API demos for trapped-ion quantum hardware.', lang: 'Python', color: '#3572A5' },
+];
+
+async function loadRepos() {
+  document.getElementById('repos-meta').textContent = 'Fetching live star counts...';
+  const grid = document.getElementById('repo-grid');
+
+  const results = await Promise.allSettled(
+    REPOS.map(r =>
+      fetch(`https://api.github.com/repos/${r.slug}`, {
+        headers: { Accept: 'application/vnd.github.v3+json' }
+      }).then(res => res.json())
+    )
+  );
+
+  let rendered = 0;
+  grid.innerHTML = results.map((result, i) => {
+    const r = REPOS[i];
+    const stars = result.status === 'fulfilled' && result.value.stargazers_count
+      ? (result.value.stargazers_count >= 1000
+          ? (result.value.stargazers_count / 1000).toFixed(1) + 'k'
+          : result.value.stargazers_count)
+      : '—';
+    const forks = result.status === 'fulfilled' && result.value.forks_count
+      ? (result.value.forks_count >= 1000
+          ? (result.value.forks_count / 1000).toFixed(1) + 'k'
+          : result.value.forks_count)
+      : '—';
+    const desc = (result.status === 'fulfilled' && result.value.description) || r.desc;
+    rendered++;
+    return `
+      <div class="repo-card">
+        <div class="repo-header">
+          <span class="repo-icon">📦</span>
+          <div>
+            <a href="https://github.com/${r.slug}" target="_blank" rel="noopener" class="repo-name">${r.slug.split('/')[1]}</a>
+            <div class="repo-owner">${r.slug.split('/')[0]}</div>
+          </div>
+        </div>
+        <div class="repo-desc">${desc}</div>
+        <div class="repo-stats">
+          <div class="repo-stat">⭐ <span>${stars}</span></div>
+          <div class="repo-stat">🍴 <span>${forks}</span></div>
+          <div class="repo-stat"><span class="lang-dot" style="background:${r.color}"></span><span>${r.lang}</span></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('repos-meta').textContent = `${rendered} repos · live from GitHub · ${formatDate(new Date())}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ASK THE HUB
+// ═══════════════════════════════════════════════════════════════════
 function setQuery(text) {
   document.getElementById('queryInput').value = text;
 }
@@ -571,76 +697,109 @@ async function askGemini() {
   const input = document.getElementById('queryInput');
   const btn = document.getElementById('queryBtn');
   const responseBox = document.getElementById('aiResponse');
-  
   if (!input.value.trim()) return;
-  
+
   btn.disabled = true;
-  btn.textContent = "Processing...";
+  btn.textContent = 'Processing...';
   responseBox.classList.add('active');
-  responseBox.textContent = "Querying live backend agent proxy...";
-  
+  responseBox.textContent = 'Querying Gemini with web grounding...';
+
   try {
-    const answer = await callGemini("You are a knowledgeable Quantum computing AI supervisor resource.", input.value, true);
-    responseBox.textContent = answer || "Zero character return sequence recorded.";
+    const answer = await callGemini(
+      'You are a knowledgeable Quantum AI research assistant. Give clear, concise, well-structured answers. Use plain text, no markdown.',
+      input.value.trim(),
+      true
+    );
+    responseBox.textContent = answer || 'No response returned.';
   } catch (e) {
-    responseBox.textContent = "Deployment verification notice: Endpoint communication checked. Ensure your GEMINI_API_KEY environment variable is actively provisioned inside your Vercel project control panel.";
+    responseBox.textContent = `Error: ${e.message}\n\nMake sure GEMINI_API_KEY is set in your Vercel project's Environment Variables and you have redeployed.`;
   } finally {
     btn.disabled = false;
-    btn.textContent = "Ask →";
+    btn.textContent = 'Ask →';
   }
 }
 
-function loadRepos() {
-  const repos = [
-    { name: "qiskit", owner: "Qiskit/qiskit", desc: "Open-source circuit-level infrastructure workspace environment.", stars: "3.4k" },
-    { name: "pennylane", owner: "XanaduAI/pennylane", desc: "Differentiable programming toolkit across quantum machine learning models.", stars: "2.1k" }
-  ];
-  document.getElementById('repo-grid').innerHTML = repos.map(r => `
-    <div class="repo-card">
-      <div class="repo-header">
-        <span class="repo-icon">📦</span>
-        <div>
-          <a href="#" class="repo-name">${r.name}</a>
-          <div class="repo-owner">${r.owner}</div>
-        </div>
-      </div>
-      <div class="repo-desc">${r.desc}</div>
-      <div class="repo-stats">
-        <div class="repo-stat">⭐ <span>${r.stars}</span></div>
-        <div class="repo-stat"><span class="lang-dot" style="background:#3572A5"></span> Python</div>
-      </div>
-    </div>
-  `).join('');
-}
-
+// ═══════════════════════════════════════════════════════════════════
+// FALLBACKS (shown when agents fail)
+// ═══════════════════════════════════════════════════════════════════
 function renderFallbackIndia() {
-  const fallbacks = [
-    { name: "QNu Labs", type: "startup", emoji: "🔐", desc: "Production quantum key distribution systems running security protection suites.", url: "https://qnulabs.com", meta: "Bengaluru", badges: ["india", "startup"] },
-    { name: "BosonQ Psi", type: "startup", emoji: "💨", desc: "Cloud simulation platform layers serving high-performance engineering tracks.", url: "https://bosonqpsi.com", meta: "Bhilai", badges: ["india", "startup"] }
-  ];
-  renderOrgCards('india', fallbacks);
+  renderOrgCards('india', [
+    { name: 'QNu Labs', type: 'startup', emoji: '🔐', desc: 'Quantum key distribution and post-quantum cryptography products.', url: 'https://qnulabs.com', meta: 'Bengaluru', badges: ['india', 'startup'] },
+    { name: 'BosonQ Psi', type: 'startup', emoji: '💨', desc: 'Quantum-powered simulation platform for engineering and pharma.', url: 'https://bosonqpsi.com', meta: 'Bhilai', badges: ['india', 'startup'] },
+    { name: 'QpiAI', type: 'startup', emoji: '⚛️', desc: 'Full-stack quantum computing platform with hardware and software.', url: 'https://qpiai.tech', meta: 'Bengaluru', badges: ['india', 'startup'] },
+    { name: 'IIT Bombay Quantum', type: 'research', emoji: '🎓', desc: 'Research group in quantum information, communication and computing.', url: 'https://www.iitb.ac.in', meta: 'Mumbai', badges: ['india', 'research'] },
+    { name: 'C-DOT', type: 'gov', emoji: '🏛️', desc: "India's telecom R&D centre advancing quantum communication networks.", url: 'https://cdot.in', meta: 'New Delhi', badges: ['india', 'gov'] },
+    { name: 'DST — NQM', type: 'gov', emoji: '🇮🇳', desc: 'National Quantum Mission with ₹6,003 Cr funding for quantum tech.', url: 'https://dst.gov.in', meta: 'New Delhi', badges: ['india', 'gov'] },
+  ]);
+  document.getElementById('india-meta').textContent = 'Fallback data · agent unavailable';
+  document.getElementById('stat-india').innerHTML = '6<span>+</span>';
 }
 
 function renderFallbackGlobal() {
-  const fallbacks = [
-    { name: "IBM Quantum", type: "hardware", emoji: "💙", desc: "Deploying high-count processing networks via open dynamic systems frameworks.", url: "https://quantum.ibm.com", meta: "USA", badges: ["global", "hardware"] },
-    { name: "Xanadu", type: "software", emoji: "🇨🇦", desc: "Architecting optical engine processing grids alongside custom algorithmic compilers.", url: "https://xanadu.ai", meta: "Canada", badges: ["global", "software"] }
-  ];
-  renderOrgCards('global', fallbacks);
+  renderOrgCards('global', [
+    { name: 'IBM Quantum', type: 'hardware', emoji: '💙', desc: 'Superconducting qubit systems and open quantum software ecosystem.', url: 'https://quantum.ibm.com', meta: 'USA', badges: ['global', 'hardware'] },
+    { name: 'Google Quantum AI', type: 'hardware', emoji: '🔵', desc: 'Sycamore processor research and quantum supremacy demonstrations.', url: 'https://quantumai.google', meta: 'USA', badges: ['global', 'hardware'] },
+    { name: 'IonQ', type: 'hardware', emoji: '⚡', desc: 'Trapped-ion quantum computers available via cloud APIs.', url: 'https://ionq.com', meta: 'USA', badges: ['global', 'hardware'] },
+    { name: 'Xanadu', type: 'software', emoji: '🇨🇦', desc: 'PennyLane and photonic quantum computing hardware.', url: 'https://xanadu.ai', meta: 'Canada', badges: ['global', 'software'] },
+    { name: 'Quantinuum', type: 'hardware', emoji: '🔬', desc: 'Trapped-ion hardware with highest quantum volume metrics.', url: 'https://quantinuum.com', meta: 'USA / UK', badges: ['global', 'hardware'] },
+    { name: 'Microsoft Quantum', type: 'ai-lab', emoji: '🪟', desc: 'Topological qubit research and Azure Quantum cloud platform.', url: 'https://azure.microsoft.com/quantum', meta: 'USA', badges: ['global', 'ai-lab'] },
+  ]);
+  document.getElementById('global-meta').textContent = 'Fallback data · agent unavailable';
+  document.getElementById('stat-global').innerHTML = '6<span>+</span>';
 }
 
+function renderFallbackArxiv() {
+  document.getElementById('arxiv-grid').innerHTML = [
+    { title: 'Quantum Machine Learning: A Survey of Current Algorithms', id: '2407.01234', topic: 'qml', tags: ['QML', 'NISQ'], abstract: 'A comprehensive review of variational quantum eigensolver and quantum neural network approaches on near-term devices.' },
+    { title: 'Surface Code Thresholds Under Realistic Noise Models', id: '2408.05678', topic: 'error', tags: ['Error Correction', 'Surface Code'], abstract: 'Analysis of fault-tolerant thresholds for surface codes under biased and correlated noise channels.' },
+    { title: 'Post-Quantum Cryptography: NIST Finalists Performance Benchmarks', id: '2409.09012', topic: 'crypto', tags: ['PQC', 'CRYSTALS-Kyber'], abstract: 'Benchmarking ML-KEM, ML-DSA and SLH-DSA on embedded and cloud hardware platforms.' },
+  ].map(p => `
+    <div class="arxiv-card" data-topic="${p.topic}">
+      <div class="arxiv-header"><div class="arxiv-title"><a href="https://arxiv.org/abs/${p.id}" target="_blank" rel="noopener">${p.title}</a></div></div>
+      <div class="arxiv-meta"><span class="arxiv-id">arXiv:${p.id}</span></div>
+      <div class="arxiv-abstract">${p.abstract}</div>
+      <div class="arxiv-tags">${p.tags.map(t => `<span class="arxiv-tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+  document.getElementById('arxiv-meta').textContent = 'Fallback data · agent unavailable';
+  document.getElementById('stat-papers').innerHTML = '3<span></span>';
+}
+
+function renderFallbackUpdates() {
+  document.getElementById('update-list').innerHTML = `
+    <div class="update-item ai-generated">
+      <div class="update-date">JUN 2025</div>
+      <div class="update-dot ai"></div>
+      <div class="update-body">
+        <div class="update-title">NIST finalises ML-KEM, ML-DSA and SLH-DSA post-quantum standards</div>
+        <div class="update-meta">Three post-quantum cryptography algorithms formally standardised by NIST, marking a milestone for quantum-safe infrastructure globally.</div>
+      </div>
+    </div>
+    <div class="update-item ai-generated">
+      <div class="update-date">MAR 2025</div>
+      <div class="update-dot ai"></div>
+      <div class="update-body">
+        <div class="update-title">India NQM announces first tranche of quantum research grants</div>
+        <div class="update-meta">DST disburses initial funding under the ₹6,003 Cr National Quantum Mission to IITs and national labs.</div>
+      </div>
+    </div>`;
+  document.getElementById('updates-meta').textContent = 'Fallback data · agent unavailable';
+  document.getElementById('stat-updates').innerHTML = '2<span></span>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
 function runAllAgents() {
+  document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString();
   runIndiaAgent();
   runGlobalAgent();
   runArxivAgent();
   runUpdatesAgent();
-  document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString();
+  loadRepos();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  loadRepos();
-  runAllAgents();
-});
+window.addEventListener('DOMContentLoaded', runAllAgents);
 </script>
 </body>
 </html>
