@@ -284,7 +284,7 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 
 <hr class="divider">
 
-<!-- REPOS SECTION -->
+<!-- REPOS SECTION (static - GitHub API needs auth for high rate limits) -->
 <div class="section" id="repos">
   <div class="section-header">
     <div class="section-title"><span class="tag">03</span>Essential Open-Source Repos</div>
@@ -350,7 +350,7 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 <div class="section" id="explore">
   <div class="section-header">
     <div class="section-title"><span class="tag">AI</span>Ask the Hub</div>
-    <div class="section-meta">powered by gemini + web search</div>
+    <div class="section-meta">powered by gemini-2.5-flash + web search</div>
   </div>
   <div class="ai-panel">
     <div class="ai-panel-header">
@@ -388,26 +388,38 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 
 <script>
 // ═══════════════════════════════════════════════════
-// CORE GEMINI API PROXY CALL
+// CORE GEMINI API CALL (Using standard structure / v1beta API format)
 // ═══════════════════════════════════════════════════
 async function callGemini(systemPrompt, userPrompt, useWebSearch = false) {
-  // Routes safely via your serverless proxy setup to prevent CORS block issues
-  const res = await fetch('/api/gemini', {
+  // Replace with your actual Gemini endpoint proxy or server configuration setup
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_API_KEY';
+  
+  const body = {
+    systemInstruction: {
+      parts: [{ text: systemPrompt }]
+    },
+    contents: [{
+      role: 'user',
+      parts: [{ text: userPrompt }]
+    }],
+    generationConfig: {
+      maxOutputTokens: 1000
+    }
+  };
+
+  if (useWebSearch) {
+    body.tools = [{ googleSearch: {} }];
+  }
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemPrompt: systemPrompt,
-      userPrompt: userPrompt,
-      useWebSearch: useWebSearch
-    })
+    body: JSON.stringify(body)
   });
   
-  if (!res.ok) {
-    throw new Error(`Server status context: ${res.status}`);
-  }
-  
   const data = await res.json();
-  return data.text || '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return text;
 }
 
 // ═══════════════════════════════════════════════════
@@ -448,7 +460,6 @@ Generate 12 diverse orgs covering: QNu Labs, BosonQ Psi, Quantacus, IISc Quantum
     document.getElementById('stat-india').innerHTML = data.orgs.length + '<span>+</span>';
     setAgentState('india', 'done', `Found ${data.orgs.length} India orgs`);
   } catch (e) {
-    console.error(e);
     setAgentState('india', 'error', 'Error — showing fallback data');
     renderFallbackIndia();
   }
@@ -468,4 +479,365 @@ async function runGlobalAgent() {
 
   try {
     const raw = await callGemini(SYSTEM, PROMPT, false);
-    const clean = raw.replace(/
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const data = JSON.parse(clean);
+    renderOrgCards('global', data.orgs);
+    document.getElementById('global-meta').textContent = `${data.orgs.length} orgs · AI-generated · ${formatDate(new Date())}`;
+    document.getElementById('stat-global').innerHTML = data.orgs.length + '<span>+</span>';
+    setAgentState('global', 'done', `Found ${data.orgs.length} global orgs`);
+  } catch (e) {
+    setAgentState('global', 'error', 'Error — showing fallback data');
+    renderFallbackGlobal();
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER ORG CARDS
+// ═══════════════════════════════════════════════════
+function badgeClass(b) {
+  const map = { india:'badge-india', global:'badge-global', research:'badge-research', startup:'badge-startup', gov:'badge-gov', hardware:'badge-startup', software:'badge-research', 'ai-lab':'badge-research' };
+  return map[b] || 'badge-startup';
+}
+function badgeLabel(b) {
+  const map = { india:'🇮🇳 India', global:'Global', research:'Research', startup:'Startup', gov:'Government', hardware:'Hardware', software:'SDK', 'ai-lab':'AI Lab' };
+  return map[b] || b;
+}
+
+function renderOrgCards(section, orgs) {
+  const grid = document.getElementById(section + '-cards');
+  grid.innerHTML = orgs.map(org => `
+    <div class="card ai-generated" data-type="${org.type}">
+      <div class="card-top">
+        <div class="card-logo">${org.emoji || '⚛️'}</div>
+        <div class="card-badges">${(org.badges||[]).map(b=>`<span class="badge ${badgeClass(b)}">${badgeLabel(b)}</span>`).join('')}</div>
+      </div>
+      <div class="card-name">${org.name}</div>
+      <div class="card-desc">${org.desc}</div>
+      <div class="card-footer">
+        <a href="${org.url}" target="_blank" class="card-link">${(org.url||'').replace('https://','').split('/')[0]} ↗</a>
+        <span class="card-meta">${org.meta || ''}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// AGENT 3: ARXIV LIVE FEED
+// ═══════════════════════════════════════════════════
+let allPapers = [];
+
+async function runArxivAgent() {
+  setAgentState('arxiv', 'running', 'Fetching latest papers from arxiv.org...');
+  document.getElementById('arxiv-meta').textContent = 'Fetching...';
+
+  try {
+    const queries = [
+      'quantum+machine+learning',
+      'quantum+error+correction',
+      'variational+quantum+algorithm',
+      'quantum+cryptography+post-quantum',
+    ];
+    const allEntries = [];
+    for (const q of queries) {
+      const url = `https://export.arxiv.org/api/query?search_query=cat:quant-ph+AND+ti:${q}&sortBy=submittedDate&sortOrder=descending&max_results=4`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'application/xml');
+      const entries = Array.from(xml.querySelectorAll('entry'));
+      entries.forEach(e => {
+        const id = e.querySelector('id')?.textContent?.split('/abs/')[1]?.trim() || '';
+        const title = e.querySelector('title')?.textContent?.replace(/\s+/g,' ').trim() || '';
+        const abstract = e.querySelector('summary')?.textContent?.replace(/\s+/g,' ').trim() || '';
+        const published = e.querySelector('published')?.textContent?.trim() || '';
+        const authors = Array.from(e.querySelectorAll('author name')).map(a=>a.textContent).slice(0,3).join(', ');
+        const link = e.querySelector('link[type="text/html"]')?.getAttribute('href') || `https://arxiv.org/abs/${id}`;
+        const cats = Array.from(e.querySelectorAll('category')).map(c=>c.getAttribute('term'));
+        if (title && id) {
+          allEntries.push({ id, title, abstract, published, authors, link, cats, query: q });
+        }
+      });
+    }
+    const seen = new Set();
+    allPapers = allEntries.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+    allPapers.sort((a,b) => new Date(b.published) - new Date(a.published));
+    renderArxivCards(allPapers);
+    document.getElementById('arxiv-meta').textContent = `${allPapers.length} papers · live from arxiv.org · ${formatDate(new Date())}`;
+    document.getElementById('stat-papers').innerHTML = allPapers.length + '<span>+</span>';
+    setAgentState('arxiv', 'done', `Loaded ${allPapers.length} papers`);
+  } catch(e) {
+    setAgentState('arxiv', 'error', 'arXiv fetch failed — check network');
+    document.getElementById('arxiv-meta').textContent = 'Error fetching papers';
+    document.getElementById('arxiv-grid').innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:20px;">Could not fetch arXiv papers. <a href="https://arxiv.org/list/quant-ph/recent" target="_blank" style="color:var(--accent)">Browse directly on arxiv.org ↗</a></div>';
+  }
+}
+
+function queryTag(q) {
+  const map = { 'quantum+machine+learning':'Quantum ML', 'quantum+error+correction':'Error Correction', 'variational+quantum+algorithm':'VQA', 'quantum+cryptography+post-quantum':'Cryptography' };
+  return map[q] || q;
+}
+
+function renderArxivCards(papers) {
+  const grid = document.getElementById('arxiv-grid');
+  if (!papers.length) { grid.innerHTML = '<div style="color:var(--text-dim);padding:20px;font-size:13px;">No papers found.</div>'; return; }
+  grid.innerHTML = papers.map(p => {
+    const date = p.published ? new Date(p.published).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '';
+    return `<div class="arxiv-card" data-query="${p.query}">
+      <div class="arxiv-header">
+        <div class="arxiv-title"><a href="${p.link}" target="_blank">${p.title}</a></div>
+      </div>
+      <div class="arxiv-meta">
+        <span class="arxiv-id">${p.id}</span>
+        <span>${date}</span>
+        <span>${p.authors}${p.authors ? ' et al.' : ''}</span>
+      </div>
+      <div class="arxiv-abstract">${p.abstract}</div>
+      <div class="arxiv-tags">
+        <span class="arxiv-tag">${queryTag(p.query)}</span>
+        ${p.cats.slice(0,2).map(c=>`<span class="arxiv-tag">${c}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterArxiv(type, btn) {
+  const cards = document.querySelectorAll('#arxiv-grid .arxiv-card');
+  const queryMap = { qml:'quantum+machine+learning', error:'quantum+error+correction', algo:'variational+quantum+algorithm', crypto:'quantum+cryptography+post-quantum' };
+  cards.forEach(c => {
+    c.style.display = (type === 'all' || c.dataset.query === queryMap[type]) ? '' : 'none';
+  });
+  document.querySelectorAll('#arxiv-filter-row .filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+// AGENT 4: NEWS / UPDATES (Gemini with web search)
+// ═══════════════════════════════════════════════════
+async function runUpdatesAgent() {
+  setAgentState('updates', 'running', 'Fetching latest Quantum AI news...');
+  document.getElementById('updates-meta').textContent = 'AI agent searching the web...';
+
+  const SYSTEM = `You are a Quantum Computing news analyst. Return ONLY valid JSON, no markdown:
+{"updates": [{"date":"Mon YYYY","title":"...","source":"...","url":"...","category":"hardware|software|india|funding|research"}]}
+Generate 10 items. Be specific with real events. Prioritise the most recent and impactful news.`;
+
+  const PROMPT = `Search for and compile the 10 most significant Quantum Computing and Quantum AI news events and breakthroughs from the past 12 months (mid-2024 to mid-2025). Include: hardware milestones (IBM, Google, Microsoft), India NQM updates, funding rounds, new open-source releases, and research breakthroughs. For each item provide: date (format "Mon YYYY"), headline title (specific, factual), source organization name, source URL, and category. Order from most recent to oldest.`;
+
+  try {
+    const raw = await callGemini(SYSTEM, PROMPT, true); // web search ON
+    const clean = raw.replace(/```json|
+```/g, '').trim();
+    const data = JSON.parse(clean);
+    renderUpdates(data.updates);
+    document.getElementById('updates-meta').textContent = `${data.updates.length} items · AI + web search · ${formatDate(new Date())}`;
+    document.getElementById('stat-updates').innerHTML = data.updates.length + '<span>+</span>';
+    setAgentState('updates', 'done', `Fetched ${data.updates.length} news items`);
+  } catch(e) {
+    setAgentState('updates', 'error', 'Web search failed — showing cached news');
+    renderFallbackUpdates();
+  }
+}
+
+function catColor(cat) {
+  const map = { hardware:'var(--accent)', software:'var(--accent3)', india:'var(--india)', funding:'var(--accent2)', research:'#fbbf24' };
+  return map[cat] || 'var(--accent)';
+}
+
+function renderUpdates(items) {
+  const list = document.getElementById('update-list');
+  list.innerHTML = items.map(item => `
+    <div class="update-item ai-generated">
+      <div class="update-date">${item.date}</div>
+      <div class="update-dot ai" style="background:${catColor(item.category)}"></div>
+      <div class="update-body">
+        <div class="update-title">${item.title}</div>
+        <div class="update-meta">${item.source} — <a href="${item.url}" target="_blank">${(item.url||'').replace('https://','').split('/')[0]} ↗</a></div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// GITHUB REPO LIVE STAR COUNTS
+// ═══════════════════════════════════════════════════
+const REPOS = [
+  { repo:'Qiskit/qiskit', desc:'Open-source SDK for working with quantum computers at the level of pulses, circuits, and application modules.', lang:'Python', langColor:'#3572A5' },
+  { repo:'PennyLaneAI/pennylane', desc:'Differentiable programming of quantum computers with ML framework integration and hardware-agnostic execution.', lang:'Python', langColor:'#3572A5' },
+  { repo:'quantumlib/Cirq', desc:'Python library for writing, manipulating, and optimizing quantum circuits and running them on quantum hardware.', lang:'Python', langColor:'#3572A5' },
+  { repo:'microsoft/qsharp', desc:'Q# quantum programming language and QDK with full Azure Quantum integration and resource estimation.', lang:'Q#', langColor:'#178600' },
+  { repo:'quantumlib/OpenFermion', desc:'Library for compiling and analyzing quantum algorithms for fermionic systems — chemistry and materials.', lang:'Python', langColor:'#3572A5' },
+  { repo:'CQCL/tket', desc:'High-performance hardware-agnostic quantum compiler with extensions for all major frameworks.', lang:'C++', langColor:'#f34b7d' },
+  { repo:'XanaduAI/strawberryfields', desc:'Full-stack Python library for continuous-variable and photonic quantum computing.', lang:'Python', langColor:'#3572A5' },
+  { repo:'google/TensorFlow-Quantum', desc:'Hybrid classical-quantum ML library merging TensorFlow with Cirq for quantum ML research pipelines.', lang:'Python', langColor:'#3572A5' },
+  { repo:'agnostiq/covalent', desc:'Quantum-classical workflow orchestration with Pythonic API and web UI for hybrid compute jobs.', lang:'Python', langColor:'#3572A5' },
+  { repo:'Qiskit/qiskit-machine-learning', desc:'QML algorithms: QNNs, VQC, QSVM, and quantum kernels — integrates with scikit-learn.', lang:'Python', langColor:'#3572A5' },
+  { repo:'aws/amazon-braket-sdk-python', desc:'SDK for Amazon Braket — access IonQ, Rigetti, D-Wave, QuEra, and IQM hardware from one API.', lang:'Python', langColor:'#3572A5' },
+  { repo:'dwavesystems/dwave-ocean-sdk', desc:'D-Wave Ocean tools for building quantum annealing applications for optimization problems.', lang:'Python', langColor:'#3572A5' },
+];
+
+const GH_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);flex-shrink:0;margin-top:1px"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>`;
+
+async function loadRepos() {
+  const grid = document.getElementById('repo-grid');
+  grid.innerHTML = REPOS.map(r => `
+    <div class="repo-card" id="repo-${r.repo.replace('/','_')}">
+      <div class="repo-header">${GH_ICON}<div>
+        <div class="repo-name"><a href="https://github.com/${r.repo}" target="_blank" style="color:var(--accent);text-decoration:none">${r.repo}</a></div>
+        <div class="repo-owner">${r.repo.split('/')[0]}</div>
+      </div></div>
+      <div class="repo-desc">${r.desc}</div>
+      <div class="repo-stats">
+        <div class="repo-stat">⭐ <span id="stars-${r.repo.replace('/','_')}">...</span></div>
+        <div class="repo-stat"><span class="lang-dot" style="background:${r.langColor}"></span><span>${r.lang}</span></div>
+        <div class="repo-stat">🍴 <span id="forks-${r.repo.replace('/','_')}">...</span></div>
+      </div>
+    </div>`).join('');
+
+  for (const r of REPOS) {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${r.repo}`);
+      if (res.ok) {
+        const data = await res.json();
+        const stars = data.stargazers_count >= 1000 ? (data.stargazers_count/1000).toFixed(1)+'k' : data.stargazers_count;
+        const forks = data.forks_count >= 1000 ? (data.forks_count/1000).toFixed(1)+'k' : data.forks_count;
+        const key = r.repo.replace('/','_');
+        const s = document.getElementById('stars-'+key);
+        const f = document.getElementById('forks-'+key);
+        if (s) s.textContent = stars;
+        if (f) f.textContent = forks;
+      }
+      await new Promise(r => setTimeout(r, 120));
+    } catch(e) {}
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ASK THE HUB
+// ═══════════════════════════════════════════════════
+function setQuery(text) {
+  document.getElementById('queryInput').value = text;
+  askGemini();
+}
+
+async function askGemini() {
+  const input = document.getElementById('queryInput');
+  const btn = document.getElementById('queryBtn');
+  const responseDiv = document.getElementById('aiResponse');
+  const q = input.value.trim();
+  if (!q) return;
+  btn.disabled = true; btn.textContent = 'Thinking...';
+  responseDiv.className = 'ai-response active';
+  responseDiv.style.color = 'var(--text-dim)';
+  responseDiv.style.fontStyle = 'italic';
+  responseDiv.textContent = 'Searching the Quantum AI knowledge base...';
+
+  const SYSTEM = `You are an expert research assistant specializing in Quantum Computing and Quantum AI. Deep knowledge of:
+- Global ecosystem: IBM, Google, Microsoft, IonQ, D-Wave, Quantinuum, QuEra, Xanadu, Classiq, PsiQuantum, Pasqal, Alice & Bob
+- India's landscape: NQM, QNu Labs, BosonQ Psi, IISc, TIFR, IITs, C-DAC, Mphasis, TCS Research
+- Open-source: Qiskit, PennyLane, Cirq, Q#, TFQ, Covalent, TKET, Ocean SDK
+- Algorithms: VQE, QAOA, Grover, Shor, QML, quantum kernels, quantum error correction
+- Current state as of 2025: NQM progress, post-quantum cryptography NIST standards
+Provide concise, accurate responses under 400 words. Use bold for org names. Be specific with facts and dates.`;
+
+  try {
+    const raw = await callGemini(SYSTEM, q, true);
+    responseDiv.style.color = '';
+    responseDiv.style.fontStyle = '';
+    responseDiv.innerHTML = raw
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^### (.*$)/gm, '<h3 style="margin:10px 0 5px;font-size:15px;color:var(--text)">$1</h3>')
+      .replace(/^## (.*$)/gm, '<h3 style="margin:10px 0 5px;font-size:15px;color:var(--text)">$1</h3>')
+      .replace(/^- (.*$)/gm, '• $1<br>')
+      .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+  } catch(e) {
+    responseDiv.innerHTML = '<span style="color:var(--india)">Error connecting to AI. Check network.</span>';
+  }
+  btn.disabled = false; btn.textContent = 'Ask →';
+}
+
+document.getElementById('queryInput').addEventListener('keydown', e => { if (e.key === 'Enter') askGemini(); });
+
+// ═══════════════════════════════════════════════════
+// FILTER CARDS
+// ═══════════════════════════════════════════════════
+function filterCards(section, type, btn) {
+  const grid = document.getElementById(section + '-cards');
+  if (!grid) return;
+  grid.querySelectorAll('.card').forEach(c => {
+    c.style.display = (type === 'all' || c.dataset.type === type) ? '' : 'none';
+  });
+  btn.parentElement.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+// FALLBACKS
+// ═══════════════════════════════════════════════════
+function renderFallbackIndia() {
+  const orgs = [
+    {name:'QNu Labs',type:'startup',emoji:'⚛️',desc:'India\'s first quantum cryptography company building QKD systems and Quantum Random Number Generators for secure communications in Bengaluru.',url:'https://www.qnulabs.com',meta:'Bengaluru · 2016',badges:['india','startup']},
+    {name:'BosonQ Psi',type:'startup',emoji:'🔬',desc:'Quantum simulation platform for engineering and pharmaceutical design with cloud-based quantum-HPC hybrid workflows.',url:'https://www.bosonqpsi.com',meta:'Bhilai · 2021',badges:['india','startup']},
+    {name:'National Quantum Mission',type:'gov',emoji:'🇮🇳',desc:'₹6,003 crore government mission (2023–2031) to develop quantum computers, quantum networks, and satellite QKD for India.',url:'https://dst.gov.in',meta:'New Delhi · 2023',badges:['india','gov']},
+    {name:'IISc Quantum Lab',type:'research',emoji:'🏛️',desc:'Indian Institute of Science centre for superconducting qubits, quantum algorithms, and quantum information theory — one of India\'s premier quantum research hubs.',url:'https://iisc.ac.in',meta:'Bengaluru · Academic',badges:['india','research']},
+    {name:'TIFR Quantum Centre',type:'research',emoji:'🔭',desc:'Tata Institute of Fundamental Research working on quantum materials, condensed matter computing, and topological qubits.',url:'https://www.tifr.res.in',meta:'Mumbai · Academic',badges:['india','research']},
+    {name:'C-DAC Quantum',type:'gov',emoji:'🏢',desc:'Centre for Development of Advanced Computing building India\'s quantum simulator PARAM Quantum and the national quantum software stack.',url:'https://www.cdac.in',meta:'Pune · PSU',badges:['india','gov']},
+  ];
+  renderOrgCards('india', orgs);
+  document.getElementById('stat-india').innerHTML = orgs.length + '<span>+</span>';
+}
+
+function renderFallbackGlobal() {
+  const orgs = [
+    {name:'IBM Quantum',type:'hardware',emoji:'🔵',desc:'World\'s largest fleet of cloud-accessible quantum computers. Qiskit SDK with roadmap to 100k+ qubit systems by 2033.',url:'https://quantum.ibm.com',meta:'USA · 1000+ qubits',badges:['global','hardware']},
+    {name:'Google Quantum AI',type:'hardware',emoji:'🟣',desc:'Willow chip demonstrated below-threshold error correction. Cirq + TensorFlow Quantum ecosystem with 105 physical qubits.',url:'https://quantumai.google',meta:'USA · Willow chip',badges:['global','hardware']},
+    {name:'Microsoft Azure Quantum',type:'hardware',emoji:'💎',desc:'Topological qubit research via Majorana 1 chip alongside Azure Quantum cloud platform and Q# programming language.',url:'https://azure.microsoft.com/quantum',meta:'USA · Cloud + Hardware',badges:['global','hardware']},
+    {name:'IonQ',type:'hardware',emoji:'⚡',desc:'Trapped-ion quantum computers with industry-leading algorithmic qubits available on AWS, Azure, and Google Cloud.',url:'https://ionq.com',meta:'USA · NASDAQ: IONQ',badges:['global','hardware']},
+    {name:'PennyLane / Xanadu',type:'software',emoji:'🌊',desc:'Differentiable quantum programming framework integrating with PyTorch and TensorFlow for quantum machine learning.',url:'https://pennylane.ai',meta:'Canada · Open Source',badges:['global','software']},
+    {name:'Quantinuum',type:'hardware',emoji:'🔷',desc:'H-Series trapped-ion systems with highest quantum volume. TKET compiler and InQuanto for quantum chemistry applications.',url:'https://www.quantinuum.com',meta:'USA/UK',badges:['global','hardware']},
+  ];
+  renderOrgCards('global', orgs);
+  document.getElementById('stat-global').innerHTML = orgs.length + '<span>+</span>';
+}
+
+function renderFallbackUpdates() {
+  const items = [
+    {date:'Jun 2025',title:'India NQM funds 4 Quantum Hubs at IISc, IIT-B, IIT-M, TIFR with ₹800Cr allocation',source:'DST India',url:'https://dst.gov.in',category:'india'},
+    {date:'May 2025',title:'Google Willow chip demonstrates below-threshold error correction on surface codes',source:'Google Quantum AI',url:'https://quantumai.google',category:'hardware'},
+    {date:'Apr 2025',title:'Microsoft reveals first topological qubits using Majorana 1 chip',source:'Microsoft',url:'https://azure.microsoft.com/quantum',category:'hardware'},
+    {date:'Feb 2025',title:'Qiskit 1.4 released with AI-powered transpilation and real-time error mitigation',source:'IBM Quantum',url:'https://github.com/Qiskit/qiskit',category:'software'},
+    {date:'Dec 2024',title:'NIST finalises first 3 post-quantum cryptography standards: CRYSTALS-Kyber, Dilithium, FALCON',source:'NIST',url:'https://www.nist.gov',category:'research'},
+  ];
+  renderUpdates(items);
+  document.getElementById('stat-updates').innerHTML = items.length + '<span>+</span>';
+  document.getElementById('updates-meta').textContent = 'Cached data · agents unavailable';
+}
+
+// ═══════════════════════════════════════════════════
+// RUN ALL AGENTS ON LOAD
+// ═══════════════════════════════════════════════════
+async function runAllAgents() {
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent = 'refreshing...';
+  await Promise.all([
+    runIndiaAgent(),
+    runGlobalAgent(),
+    runArxivAgent(),
+    runUpdatesAgent(),
+    loadRepos(),
+  ]);
+  document.getElementById('lastRefresh').textContent = 'Updated ' + now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+window.addEventListener('load', () => {
+  runArxivAgent();
+  loadRepos();
+  setTimeout(runIndiaAgent, 800);
+  setTimeout(runGlobalAgent, 1800);
+  setTimeout(runUpdatesAgent, 2800);
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent = 'Loading...';
+  setTimeout(() => {
+    document.getElementById('lastRefresh').textContent = formatDate(now);
+  }, 8000);
+});
+</script>
+</body>
+</html>
