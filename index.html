@@ -249,7 +249,7 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
   <div class="card-grid" id="india-cards">
     <!-- Skeletons shown while loading -->
     <div class="skeleton-card" id="india-skel-1"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
-    <div class="skeleton-card" id="india-skel-2"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
+    <div class="skeleton-card" id="india-skel-2"><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
     <div class="skeleton-card" id="india-skel-3"><div class="skeleton skel-line skel-title"></div><div class="skeleton skel-line skel-text"></div><div class="skeleton skel-line skel-text2"></div><div class="skeleton skel-line skel-short"></div></div>
   </div>
 </div>
@@ -350,7 +350,7 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 <div class="section" id="explore">
   <div class="section-header">
     <div class="section-title"><span class="tag">AI</span>Ask the Hub</div>
-    <div class="section-meta">powered by claude-sonnet-4-6 + web search</div>
+    <div class="section-meta">powered by gemini-2.5-flash + web search</div>
   </div>
   <div class="ai-panel">
     <div class="ai-panel-header">
@@ -358,6 +358,12 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
       <div class="ai-panel-title">Research Assistant</div>
       <div class="ai-panel-sub">Real-time Quantum AI answers</div>
     </div>
+    
+    <!-- API KEY INPUT ROW -->
+    <div class="query-row" style="margin-bottom: 12px;">
+      <input type="password" class="query-input" id="apiKeyInput" placeholder="Paste your free Gemini API Key here to run agents..." style="border-color: var(--border-accent);">
+    </div>
+
     <div class="query-row">
       <input type="text" class="query-input" id="queryInput" placeholder="e.g. Which Indian startups are working on quantum ML?">
       <button class="query-btn" id="queryBtn" onclick="askClaude()">Ask →</button>
@@ -388,27 +394,40 @@ footer{border-top:0.5px solid var(--border);padding:32px 2rem;max-width:1200px;m
 
 <script>
 // ═══════════════════════════════════════════════════
-// CORE CLAUDE API CALL
+// NEW FREE GEMINI API CALL REPLACING CLAUDE CALL
 // ═══════════════════════════════════════════════════
 async function callClaude(systemPrompt, userPrompt, useWebSearch = false) {
-  const body = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }]
-  };
-  if (useWebSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  
+  if (!apiKey) {
+    throw new Error("Missing Key");
   }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+
+  // Formatting structural schema matching Google AI studio requirements
+  const body = {
+    contents: [{ parts: [{ text: userPrompt }] }],
+    systemInstruction: { parts: [{ text: systemPrompt }] }
+  };
+
+  if (useWebSearch) {
+    body.tools = [{ googleSearch: {} }];
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
+
+  if (!res.ok) {
+    const errData = await res.json();
+    throw new Error(errData.error?.message || "API call failed");
+  }
+
   const data = await res.json();
-  // Extract text from all content blocks (handles tool_use responses too)
-  const textBlock = data.content?.find(b => b.type === 'text');
-  return textBlock?.text || '';
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 // ═══════════════════════════════════════════════════
@@ -429,6 +448,13 @@ function formatDate(d) {
 // AGENT 1: INDIA ORG DISCOVERY
 // ═══════════════════════════════════════════════════
 async function runIndiaAgent() {
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  if (!apiKey) {
+    setAgentState('india', 'idle', 'Waiting for API Key');
+    renderFallbackIndia();
+    return;
+  }
+
   setAgentState('india', 'running', 'Discovering India Quantum AI orgs...');
   document.getElementById('india-meta').textContent = 'AI agent running...';
 
@@ -441,7 +467,8 @@ Generate 12 diverse orgs covering: QNu Labs, BosonQ Psi, Quantacus, IISc Quantum
 
   try {
     const raw = await callClaude(SYSTEM, PROMPT, false);
-    const clean = raw.replace(/```json|```/g, '').trim();
+    const clean = raw.replace(/```json|
+```/g, '').trim();
     const data = JSON.parse(clean);
     renderOrgCards('india', data.orgs);
     document.getElementById('india-meta').textContent = `${data.orgs.length} orgs · AI-generated · ${formatDate(new Date())}`;
@@ -457,6 +484,13 @@ Generate 12 diverse orgs covering: QNu Labs, BosonQ Psi, Quantacus, IISc Quantum
 // AGENT 2: GLOBAL ORG DISCOVERY
 // ═══════════════════════════════════════════════════
 async function runGlobalAgent() {
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  if (!apiKey) {
+    setAgentState('global', 'idle', 'Waiting for API Key');
+    renderFallbackGlobal();
+    return;
+  }
+
   setAgentState('global', 'running', 'Scanning global Quantum AI landscape...');
   document.getElementById('global-meta').textContent = 'AI agent running...';
 
@@ -518,7 +552,6 @@ async function runArxivAgent() {
   document.getElementById('arxiv-meta').textContent = 'Fetching...';
 
   try {
-    // arXiv API — CORS-accessible
     const queries = [
       'quantum+machine+learning',
       'quantum+error+correction',
@@ -546,7 +579,6 @@ async function runArxivAgent() {
         }
       });
     }
-    // Deduplicate by id
     const seen = new Set();
     allPapers = allEntries.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
     allPapers.sort((a,b) => new Date(b.published) - new Date(a.published));
@@ -600,9 +632,16 @@ function filterArxiv(type, btn) {
 }
 
 // ═══════════════════════════════════════════════════
-// AGENT 4: NEWS / UPDATES (Claude with web search)
+// AGENT 4: NEWS / UPDATES (Gemini with web search)
 // ═══════════════════════════════════════════════════
 async function runUpdatesAgent() {
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  if (!apiKey) {
+    setAgentState('updates', 'idle', 'Waiting for API Key');
+    renderFallbackUpdates();
+    return;
+  }
+
   setAgentState('updates', 'running', 'Fetching latest Quantum AI news...');
   document.getElementById('updates-meta').textContent = 'AI agent searching the web...';
 
@@ -613,8 +652,9 @@ Generate 10 items. Be specific with real events. Prioritise the most recent and 
   const PROMPT = `Search for and compile the 10 most significant Quantum Computing and Quantum AI news events and breakthroughs from the past 12 months (mid-2024 to mid-2025). Include: hardware milestones (IBM, Google, Microsoft), India NQM updates, funding rounds, new open-source releases, and research breakthroughs. For each item provide: date (format "Mon YYYY"), headline title (specific, factual), source organization name, source URL, and category. Order from most recent to oldest.`;
 
   try {
-    const raw = await callClaude(SYSTEM, PROMPT, true); // web search ON
-    const clean = raw.replace(/```json|```/g, '').trim();
+    const raw = await callClaude(SYSTEM, PROMPT, true); // web search ON via Gemini tool
+    const clean = raw.replace(/```json|
+```/g, '').trim();
     const data = JSON.parse(clean);
     renderUpdates(data.updates);
     document.getElementById('updates-meta').textContent = `${data.updates.length} items · AI + web search · ${formatDate(new Date())}`;
@@ -666,7 +706,6 @@ const GH_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" str
 
 async function loadRepos() {
   const grid = document.getElementById('repo-grid');
-  // First render with skeletons
   grid.innerHTML = REPOS.map(r => `
     <div class="repo-card" id="repo-${r.repo.replace('/','_')}">
       <div class="repo-header">${GH_ICON}<div>
@@ -681,7 +720,6 @@ async function loadRepos() {
       </div>
     </div>`).join('');
 
-  // Fetch star counts (no auth needed for public repos, 60 req/hr)
   for (const r of REPOS) {
     try {
       const res = await fetch(`https://api.github.com/repos/${r.repo}`);
@@ -695,7 +733,7 @@ async function loadRepos() {
         if (s) s.textContent = stars;
         if (f) f.textContent = forks;
       }
-      await new Promise(r => setTimeout(r, 120)); // small delay to avoid rate limit
+      await new Promise(r => setTimeout(r, 120));
     } catch(e) {}
   }
 }
@@ -709,6 +747,12 @@ function setQuery(text) {
 }
 
 async function askClaude() {
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  if (!apiKey) {
+    alert("Please enter a valid Gemini API Key in the box above!");
+    return;
+  }
+
   const input = document.getElementById('queryInput');
   const btn = document.getElementById('queryBtn');
   const responseDiv = document.getElementById('aiResponse');
@@ -739,7 +783,7 @@ Provide concise, accurate responses under 400 words. Use bold for org names. Be 
       .replace(/^- (.*$)/gm, '• $1<br>')
       .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
   } catch(e) {
-    responseDiv.innerHTML = '<span style="color:var(--india)">Error connecting to AI. Check network.</span>';
+    responseDiv.innerHTML = '<span style="color:var(--india)">Error connecting to AI. Make sure your free Gemini API key is valid.</span>';
   }
   btn.disabled = false; btn.textContent = 'Ask →';
 }
@@ -760,7 +804,7 @@ function filterCards(section, type, btn) {
 }
 
 // ═══════════════════════════════════════════════════
-// FALLBACKS (if Claude API call fails)
+// FALLBACKS (Loaded initially or if key is absent)
 // ═══════════════════════════════════════════════════
 function renderFallbackIndia() {
   const orgs = [
@@ -798,16 +842,15 @@ function renderFallbackUpdates() {
   ];
   renderUpdates(items);
   document.getElementById('stat-updates').innerHTML = items.length + '<span>+</span>';
-  document.getElementById('updates-meta').textContent = 'Cached data · agents unavailable';
+  document.getElementById('updates-meta').textContent = 'Cached data · Enter API key to run agent';
 }
 
 // ═══════════════════════════════════════════════════
-// RUN ALL AGENTS ON LOAD
+// RUN ALL AGENTS
 // ═══════════════════════════════════════════════════
 async function runAllAgents() {
   const now = new Date();
   document.getElementById('lastRefresh').textContent = 'refreshing...';
-  // Run in parallel where possible
   await Promise.all([
     runIndiaAgent(),
     runGlobalAgent(),
@@ -820,17 +863,33 @@ async function runAllAgents() {
 
 // Auto-run on page load
 window.addEventListener('load', () => {
-  // Stagger agents slightly so API doesn't get slammed simultaneously
-  runArxivAgent();           // no API key — run first
-  loadRepos();               // GitHub public API
-  setTimeout(runIndiaAgent, 800);
-  setTimeout(runGlobalAgent, 1800);
-  setTimeout(runUpdatesAgent, 2800);
+  runArxivAgent();           // No key needed
+  loadRepos();               // No key needed
+  
+  // Checks key input: runs dynamic agents if filled, else runs clean fallbacks smoothly
+  const apiKey = document.getElementById('apiKeyInput')?.value.trim();
+  if (apiKey) {
+    setTimeout(runIndiaAgent, 500);
+    setTimeout(runGlobalAgent, 1200);
+    setTimeout(runUpdatesAgent, 2000);
+  } else {
+    renderFallbackIndia();
+    renderFallbackGlobal();
+    renderFallbackUpdates();
+    setAgentState('india', 'idle', 'Enter API Key to initialize agent');
+    setAgentState('global', 'idle', 'Enter API Key to initialize agent');
+    setAgentState('updates', 'idle', 'Enter API Key to initialize agent');
+  }
+  
   const now = new Date();
-  document.getElementById('lastRefresh').textContent = 'Loading...';
-  setTimeout(() => {
-    document.getElementById('lastRefresh').textContent = formatDate(now);
-  }, 8000);
+  document.getElementById('lastRefresh').textContent = formatDate(now);
+});
+
+// Watch key field to auto-trigger agents when user pastes key
+document.getElementById('apiKeyInput').addEventListener('input', (e) => {
+  if(e.target.value.trim().length > 10) {
+     runAllAgents();
+  }
 });
 </script>
 </body>
