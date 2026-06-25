@@ -1,69 +1,109 @@
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { systemPrompt, userPrompt, useWebSearch } = req.body;
-
-  // Validate required parameters
-  if (!systemPrompt || !userPrompt) {
-    return res.status(400).json({ error: 'Missing systemPrompt or userPrompt payload strings.' });
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed",
+    });
   }
 
   try {
-    // Structure payload matching Google's Gemini Developer API structure
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: userPrompt }]
-        }
-      ],
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      generationConfig: {
-        maxOutputTokens: 1200
-      }
-    };
+    const { systemPrompt, userPrompt, useWebSearch = false } = req.body || {};
 
-    // Dynamically inject Google Search grounding if requested by the frontend agent
-    if (useWebSearch) {
-      body.tools = [{ googleSearch: {} }];
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gemini API native structural error:', errorData);
-      return res.status(response.status).json({ 
-        error: 'Gemini API operational error',
-        details: errorData 
+    if (!systemPrompt || !userPrompt) {
+      return res.status(400).json({
+        error: "Missing systemPrompt or userPrompt",
       });
     }
 
-    const data = await response.json();
-    
-    // Extract text block output from the response mapping
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is not configured",
+      });
+    }
 
-    return res.status(200).json({ text });
+    const payload = {
+      systemInstruction: {
+        role: "system",
+        parts: [
+          {
+            text: systemPrompt,
+          },
+        ],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: userPrompt,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        maxOutputTokens: 1200,
+        temperature: 0.7,
+      },
+    };
+
+    // Optional Google Search grounding
+    if (useWebSearch) {
+      payload.tools = [
+        {
+          googleSearch: {},
+        },
+      ];
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const responseText = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse Gemini response:", responseText);
+
+      return res.status(500).json({
+        error: "Invalid response from Gemini",
+        raw: responseText,
+      });
+    }
+
+    if (!response.ok) {
+      console.error("Gemini API Error:", data);
+
+      return res.status(response.status).json({
+        error: "Gemini API error",
+        details: data,
+      });
+    }
+
+    const text =
+      data?.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("\n") || "";
+
+    return res.status(200).json({
+      text,
+      groundingMetadata:
+        data?.candidates?.[0]?.groundingMetadata || null,
+    });
   } catch (error) {
-    console.error('Server execution error:', error);
-    return res.status(500).json({ 
-      error: 'Internal edge route error',
-      message: error.message 
+    console.error("Server error:", error);
+
+    return res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
     });
   }
 }
