@@ -484,7 +484,6 @@ async function runGlobalAgent() {
   }
 }
 
-// AGENT 3: arXiv Pipeline Agent
 async function runArxivAgent() {
   try {
     const label = document.getElementById('arxiv-agent-status');
@@ -492,63 +491,88 @@ async function runArxivAgent() {
     const dot = document.getElementById('arxiv-dot');
     if (dot) dot.className = "agent-dot running";
 
-    // FIX 1: Added &sortBy=submittedDate so "descending" actually returns the newest papers
-    const res = await fetch('https://export.arxiv.org/api/query?search_query=cat:quant-ph&max_results=5&sortBy=submittedDate&sortOrder=descending');
+    // arXiv API URL
+    const arxivUrl = 'https://export.arxiv.org/api/query?search_query=cat:quant-ph&max_results=5&sortBy=submittedDate&sortOrder=descending';
+
+    // Optional: quick CORS-proxy for testing (replace with your server endpoint for production)
+    const useProxy = false; // set to true for quick local testing
+    const url = useProxy
+      ? 'https://api.allorigins.win/raw?url=' + encodeURIComponent(arxivUrl)
+      : arxivUrl;
+
+    const res = await fetch(url);
+    // IMPORTANT: if the browser blocks due to CORS, you'll see the error in console/network (the fetch may never resolve)
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>'');
+      throw new Error(`arXiv fetch failed: ${res.status} ${res.statusText} ${txt.slice(0,200)}`);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
     const text = await res.text();
-    
+
+    // Basic sanity logging to console for debugging
+    console.debug('arXiv response content-type:', contentType);
+    // If response is not XML, dump a little for debugging
+    if (!/xml|html|atom/i.test(contentType)) {
+      console.warn('arXiv returned unexpected content-type:', contentType);
+    }
+
     const parser = new DOMParser();
-    // Using text/xml parsing
     const xml = parser.parseFromString(text, "text/xml");
-    
-    // FIX 2: Use querySelectorAll to bypass potential strict XML namespace issues with getElementsByTagName
-    const entries = xml.querySelectorAll("entry");
-    
-    let processed = [];
+
+    // Fallbacks for parser errors: check for parsererror nodes
+    if (xml.querySelector && xml.querySelector('parsererror')) {
+      console.error('XML parse error:', xml.querySelector('parsererror').textContent);
+      throw new Error('Failed to parse arXiv XML feed.');
+    }
+
+    // Try both namespace-insensitive lookups
+    let entries = xml.querySelectorAll("entry");
+    if (!entries || entries.length === 0) {
+      entries = xml.getElementsByTagName('entry') || [];
+    }
+
+    const processed = [];
     for (let entry of entries) {
-      // FIX 3: Safe querying using scoped querySelector lookups
-      let idNode = entry.querySelector("id");
-      let id = idNode?.textContent?.split('/abs/')?.[1] || '';
-      
-      let title = entry.querySelector("title")?.textContent || '';
-      let summary = entry.querySelector("summary")?.textContent || '';
-      
-      // Query all author tags inside this specific entry
-      let authorNodes = entry.querySelectorAll("author");
+      // Use fallback getElementsByTagName if querySelector fails on namespaces
+      const idNode = entry.querySelector?.("id") || entry.getElementsByTagName('id')[0];
+      const id = idNode?.textContent?.split('/abs/')?.[1] || '';
+
+      const titleNode = entry.querySelector?.("title") || entry.getElementsByTagName('title')[0];
+      const summaryNode = entry.querySelector?.("summary") || entry.getElementsByTagName('summary')[0];
+
+      const title = titleNode?.textContent || '';
+      const summary = summaryNode?.textContent || '';
+
+      const authors = entry.querySelectorAll ? entry.querySelectorAll("author") : entry.getElementsByTagName('author');
       let primaryAuthor = 'Unknown';
-      if (authorNodes.length > 0) {
-        primaryAuthor = authorNodes[0].querySelector("name")?.textContent || 'Unknown';
+      if (authors && authors.length > 0) {
+        const nameNode = authors[0].querySelector?.('name') || authors[0].getElementsByTagName('name')[0];
+        primaryAuthor = nameNode?.textContent || 'Unknown';
       }
-      
-      // Topic classification logic
+
       let topic = 'algo';
       const cleanSummary = summary.toLowerCase();
       const cleanTitle = title.toLowerCase();
-      
-      if (cleanSummary.includes('machine') || cleanTitle.includes('learning')) {
-        topic = 'qml';
-      } else if (cleanSummary.includes('error') || cleanSummary.includes('surface')) {
-        topic = 'error';
-      } else if (cleanSummary.includes('crypt') || cleanSummary.includes('key')) {
-        topic = 'crypto';
-      }
+      if (cleanSummary.includes('machine') || cleanTitle.includes('learning')) topic = 'qml';
+      else if (cleanSummary.includes('error') || cleanSummary.includes('surface')) topic = 'error';
+      else if (cleanSummary.includes('crypt') || cleanSummary.includes('key')) topic = 'crypto';
 
-      processed.push({ 
-        id, 
-        title: title.trim().replace(/\s+/g, ' '), // Cleans up accidental XML line breaks in titles
-        abstract: summary.trim(), 
-        author: primaryAuthor.trim(), 
-        topic 
+      processed.push({
+        id,
+        title: title.trim().replace(/\s+/g, ' '),
+        abstract: summary.trim(),
+        author: primaryAuthor.trim(),
+        topic
       });
     }
 
-    // Update state and render
     store.arxiv = processed;
     renderArxiv(processed);
-    
-    // Update DOM UI elements
+
     const statPapers = document.getElementById('stat-papers');
     if (statPapers) statPapers.innerText = processed.length;
-    
+
     if (dot) dot.className = "agent-dot done";
     if (label) label.innerText = "Assembled dynamic listings.";
   } catch (e) {
