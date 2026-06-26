@@ -2,5 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/api/backend", "destination": "/api/backend.js" }
-  ]
+  ],
+  "functions": {
+    "api/backend.js": {
+      "maxDuration": 30
+    }
+  }
 }
