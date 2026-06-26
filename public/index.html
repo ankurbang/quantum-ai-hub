@@ -574,7 +574,7 @@ Schema: {"papers":[{"title":"string","arxivId":"YYMM.NNNNN","authors":"string","
 Use real titles and real arXiv IDs. Output raw JSON only.`;
 
   try {
-    const raw = await callGemini(SYSTEM, PROMPT, true);
+    const raw = await callGemini(SYSTEM, PROMPT, false);
     console.log('arXiv raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
 
@@ -622,7 +622,7 @@ Topics: breakthroughs, India NQM, quantum AI funding, post-quantum crypto standa
 Use real events and real dates. Output raw JSON only.`;
 
   try {
-    const raw = await callGemini(SYSTEM, PROMPT, true);
+    const raw = await callGemini(SYSTEM, PROMPT, false);
     console.log('Updates raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
 
@@ -814,15 +814,14 @@ function renderFallbackUpdates() {
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-function runAllAgents() {
+async function runAllAgents() {
   document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString();
-  runIndiaAgent();
-  runGlobalAgent();
-  runArxivAgent();
-  runUpdatesAgent();
-  loadRepos();
+  loadRepos(); // GitHub API is fast, run immediately
+  await runIndiaAgent();
+  await runGlobalAgent();
+  await runArxivAgent();
+  await runUpdatesAgent();
 }
-
 window.addEventListener('DOMContentLoaded', runAllAgents);
 </script>
 </body>
