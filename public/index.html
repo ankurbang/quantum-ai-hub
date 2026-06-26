@@ -391,11 +391,15 @@ async function callGemini(systemPrompt, userPrompt, useWebSearch = false) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ systemPrompt, userPrompt, useWebSearch })
   });
+
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(`Backend error ${res.status}: ${err.error || 'unknown'}`);
+    console.error('Backend error response:', data);
+    throw new Error(`Backend error ${res.status}: ${data.error || data.message || 'unknown'}`);
   }
-  const data = await res.json();
+
+  console.log('Backend response ok, text length:', (data.text || '').length);
   return data.text || '';
 }
 
@@ -413,10 +417,27 @@ function formatDate(d) {
   return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
 }
 
-// FIX: safe JSON parser — strips leftover markdown fences after backend clean
 function parseJSON(raw) {
-  const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  return JSON.parse(clean);
+  // Strip markdown fences
+  let clean = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  // Try direct parse
+  try {
+    return JSON.parse(clean);
+  } catch(e1) {
+    // Extract first JSON object or array
+    const match = clean.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch(e2) {}
+    }
+    console.error('parseJSON failed. Raw was:', raw.slice(0, 300));
+    throw new Error('JSON parse failed');
+  }
 }
 
 function badgeClass(b) {
@@ -479,22 +500,23 @@ function filterArxiv(topic, btn) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT 1: INDIA Ecosystem Agent
+// AGENT 1: INDIA
 // ═══════════════════════════════════════════════════════════════════
 async function runIndiaAgent() {
   setAgentState('india', 'running', 'Discovering India Quantum AI orgs...');
   document.getElementById('india-meta').textContent = 'AI agent running...';
 
-  const SYSTEM = `You are an expert analyst mapping India's quantum computing and quantum AI ecosystem.
-Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
-{"orgs":[{"name":"...","type":"startup|research|gov","emoji":"...","desc":"...","url":"...","meta":"...","badges":["india","startup|research|gov"]}]}`;
+  const SYSTEM = `You are an expert analyst mapping India's quantum computing ecosystem.
+Respond ONLY with a raw JSON object. No markdown, no backticks, no explanation.
+Schema: {"orgs":[{"name":"string","type":"startup|research|gov","emoji":"string","desc":"string","url":"string","meta":"string","badges":["india","startup"]}]}`;
 
-  const PROMPT = `List 6 real, active Indian organizations in quantum computing or quantum AI.
-Include a mix of startups (e.g. QNu Labs, BosonQ Psi, QpiAI), research institutions (e.g. IIT Bombay, IISc, TIFR), and government bodies (e.g. C-DOT, DST National Quantum Mission).
-Return only JSON.`;
+  const PROMPT = `List exactly 6 real Indian organizations in quantum computing or quantum AI.
+Mix: startups (QNu Labs, BosonQ Psi, QpiAI), research (IIT Bombay, IISc, TIFR), government (C-DOT, DST NQM).
+Output raw JSON only.`;
 
   try {
     const raw = await callGemini(SYSTEM, PROMPT, false);
+    console.log('India raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
     renderOrgCards('india', data.orgs);
     document.getElementById('india-meta').textContent = `${data.orgs.length} orgs · AI-generated · ${formatDate(new Date())}`;
@@ -502,57 +524,58 @@ Return only JSON.`;
     setAgentState('india', 'done', 'Synced');
   } catch (e) {
     console.error('India agent error:', e);
-    setAgentState('india', 'error', 'Failed — showing fallback data');
+    setAgentState('india', 'error', 'Failed — showing fallback');
     renderFallbackIndia();
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT 2: GLOBAL Ecosystem Agent
+// AGENT 2: GLOBAL
 // ═══════════════════════════════════════════════════════════════════
 async function runGlobalAgent() {
-  setAgentState('global', 'running', 'Scanning global ecosystem indexes...');
+  setAgentState('global', 'running', 'Scanning global ecosystem...');
   document.getElementById('global-meta').textContent = 'AI agent running...';
 
   const SYSTEM = `You are a Global Quantum AI industry analyst.
-Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
-{"orgs":[{"name":"...","type":"hardware|software|ai-lab|startup","emoji":"...","desc":"...","url":"...","meta":"...","badges":["global","hardware|software|ai-lab|startup"]}]}`;
+Respond ONLY with a raw JSON object. No markdown, no backticks, no explanation.
+Schema: {"orgs":[{"name":"string","type":"hardware|software|ai-lab|startup","emoji":"string","desc":"string","url":"string","meta":"string","badges":["global","hardware"]}]}`;
 
-  const PROMPT = `List 6 prominent global organizations in quantum computing or quantum AI.
-Include hardware companies (IBM Quantum, Google Quantum AI, IonQ), software/SDK providers (Xanadu PennyLane, Quantinuum), and AI labs doing quantum research.
-Return only JSON.`;
+  const PROMPT = `List exactly 6 prominent global quantum computing organizations.
+Include: IBM Quantum, Google Quantum AI, IonQ (hardware), Xanadu/PennyLane, Quantinuum (software), Microsoft Quantum (ai-lab).
+Output raw JSON only.`;
 
   try {
     const raw = await callGemini(SYSTEM, PROMPT, false);
+    console.log('Global raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
     renderOrgCards('global', data.orgs);
-    document.getElementById('global-meta').textContent = `${data.orgs.length} entities mapped · ${formatDate(new Date())}`;
+    document.getElementById('global-meta').textContent = `${data.orgs.length} entities · ${formatDate(new Date())}`;
     document.getElementById('stat-global').innerHTML = `${data.orgs.length}<span>+</span>`;
     setAgentState('global', 'done', 'Synchronized');
   } catch (e) {
     console.error('Global agent error:', e);
-    setAgentState('global', 'error', 'Failed — showing fallback data');
+    setAgentState('global', 'error', 'Failed — showing fallback');
     renderFallbackGlobal();
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT 3: arXiv Agent — calls Gemini with web search to get real papers
+// AGENT 3: ARXIV
 // ═══════════════════════════════════════════════════════════════════
 async function runArxivAgent() {
   setAgentState('arxiv', 'running', 'Fetching latest quant-ph papers...');
   document.getElementById('arxiv-meta').textContent = 'Agent running...';
 
-  const SYSTEM = `You are a quantum computing research curator monitoring arXiv.
-Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
-{"papers":[{"title":"...","arxivId":"YYMM.NNNNN","authors":"...","abstract":"...","topic":"qml|error|crypto|general","tags":["..."]}]}`;
+  const SYSTEM = `You are a quantum computing research curator.
+Respond ONLY with a raw JSON object. No markdown, no backticks, no explanation.
+Schema: {"papers":[{"title":"string","arxivId":"YYMM.NNNNN","authors":"string","abstract":"string","topic":"qml|error|crypto|general","tags":["string"]}]}`;
 
-  const PROMPT = `Find 6 recent arXiv papers (from 2025 or 2026) on quantum computing topics: quantum machine learning, error correction, post-quantum cryptography, or quantum algorithms.
-Use real paper titles and real arXiv IDs. Return only JSON.`;
+  const PROMPT = `List 6 real arXiv papers from 2025 or 2026 on: quantum ML, error correction, post-quantum crypto, or quantum algorithms.
+Use real titles and real arXiv IDs. Output raw JSON only.`;
 
   try {
-    // useWebSearch=true so Gemini can ground results in real arXiv data
     const raw = await callGemini(SYSTEM, PROMPT, true);
+    console.log('arXiv raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
 
     document.getElementById('arxiv-grid').innerHTML = data.papers.map(p => `
@@ -573,33 +596,34 @@ Use real paper titles and real arXiv IDs. Return only JSON.`;
       </div>
     `).join('');
 
-    document.getElementById('arxiv-meta').textContent = `${data.papers.length} papers · web-grounded · ${formatDate(new Date())}`;
+    document.getElementById('arxiv-meta').textContent = `${data.papers.length} papers · ${formatDate(new Date())}`;
     document.getElementById('stat-papers').innerHTML = `${data.papers.length}<span></span>`;
     setAgentState('arxiv', 'done', 'Connected');
   } catch (e) {
     console.error('arXiv agent error:', e);
-    setAgentState('arxiv', 'error', 'Failed — showing fallback papers');
+    setAgentState('arxiv', 'error', 'Failed — showing fallback');
     renderFallbackArxiv();
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AGENT 4: NEWS / UPDATES Agent — calls Gemini with web search
+// AGENT 4: NEWS
 // ═══════════════════════════════════════════════════════════════════
 async function runUpdatesAgent() {
-  setAgentState('updates', 'running', 'Fetching latest quantum news...');
+  setAgentState('updates', 'running', 'Fetching quantum news...');
   document.getElementById('updates-meta').textContent = 'Agent running...';
 
-  const SYSTEM = `You are a quantum computing news intelligence analyst.
-Return ONLY valid JSON — no markdown fences, no commentary — matching this exact schema:
-{"updates":[{"date":"MON YYYY","title":"...","summary":"...","source":"...","url":"..."}]}`;
+  const SYSTEM = `You are a quantum computing news analyst.
+Respond ONLY with a raw JSON object. No markdown, no backticks, no explanation.
+Schema: {"updates":[{"date":"MON YYYY","title":"string","summary":"string","source":"string","url":"string"}]}`;
 
-  const PROMPT = `Find 5 recent news items (from 2025 or 2026) about: quantum computing breakthroughs, India National Quantum Mission, quantum AI funding rounds, or post-quantum cryptography standards.
-Use real events with real dates. Return only JSON.`;
+  const PROMPT = `List 5 real quantum computing news items from 2025 or 2026.
+Topics: breakthroughs, India NQM, quantum AI funding, post-quantum crypto standards.
+Use real events and real dates. Output raw JSON only.`;
 
   try {
-    // useWebSearch=true for real news grounding
     const raw = await callGemini(SYSTEM, PROMPT, true);
+    console.log('Updates raw:', raw.slice(0, 200));
     const data = parseJSON(raw);
 
     document.getElementById('update-list').innerHTML = data.updates.map(u => `
@@ -616,18 +640,18 @@ Use real events with real dates. Return only JSON.`;
       </div>
     `).join('');
 
-    document.getElementById('updates-meta').textContent = `${data.updates.length} items · web-grounded · ${formatDate(new Date())}`;
+    document.getElementById('updates-meta').textContent = `${data.updates.length} items · ${formatDate(new Date())}`;
     document.getElementById('stat-updates').innerHTML = `${data.updates.length}<span></span>`;
     setAgentState('updates', 'done', 'Operational');
   } catch (e) {
     console.error('Updates agent error:', e);
-    setAgentState('updates', 'error', 'Failed — showing fallback news');
+    setAgentState('updates', 'error', 'Failed — showing fallback');
     renderFallbackUpdates();
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// REPOS: Live GitHub API fetch
+// REPOS
 // ═══════════════════════════════════════════════════════════════════
 const REPOS = [
   { slug: 'Qiskit/qiskit', desc: 'Open-source quantum circuit SDK by IBM.', lang: 'Python', color: '#3572A5' },
@@ -706,13 +730,13 @@ async function askGemini() {
 
   try {
     const answer = await callGemini(
-      'You are a knowledgeable Quantum AI research assistant. Give clear, concise, well-structured answers. Use plain text, no markdown.',
+      'You are a knowledgeable Quantum AI research assistant. Give clear, concise answers in plain text, no markdown.',
       input.value.trim(),
       true
     );
     responseBox.textContent = answer || 'No response returned.';
   } catch (e) {
-    responseBox.textContent = `Error: ${e.message}\n\nMake sure GEMINI_API_KEY is set in your Vercel project's Environment Variables and you have redeployed.`;
+    responseBox.textContent = `Error: ${e.message}`;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Ask →';
@@ -720,7 +744,7 @@ async function askGemini() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FALLBACKS (shown when agents fail)
+// FALLBACKS
 // ═══════════════════════════════════════════════════════════════════
 function renderFallbackIndia() {
   renderOrgCards('india', [
@@ -772,7 +796,7 @@ function renderFallbackUpdates() {
       <div class="update-dot ai"></div>
       <div class="update-body">
         <div class="update-title">NIST finalises ML-KEM, ML-DSA and SLH-DSA post-quantum standards</div>
-        <div class="update-meta">Three post-quantum cryptography algorithms formally standardised by NIST, marking a milestone for quantum-safe infrastructure globally.</div>
+        <div class="update-meta">Three post-quantum cryptography algorithms formally standardised by NIST.</div>
       </div>
     </div>
     <div class="update-item ai-generated">
@@ -780,7 +804,7 @@ function renderFallbackUpdates() {
       <div class="update-dot ai"></div>
       <div class="update-body">
         <div class="update-title">India NQM announces first tranche of quantum research grants</div>
-        <div class="update-meta">DST disburses initial funding under the ₹6,003 Cr National Quantum Mission to IITs and national labs.</div>
+        <div class="update-meta">DST disburses initial funding under the ₹6,003 Cr National Quantum Mission.</div>
       </div>
     </div>`;
   document.getElementById('updates-meta').textContent = 'Fallback data · agent unavailable';
